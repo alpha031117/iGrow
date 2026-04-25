@@ -233,31 +233,44 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
     // Bar chart
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
     doc.text("Sales By Day", M, y); y += 10
-    const maxD = Math.max(...d.days.map(x => x.v)), bw = (CW - 18) / 7
+    const maxD = Math.max(...d.days.map(x => x.v))
+    const barChartH = 30, barGap = 2
+    const bw = (CW - barGap * 6) / 7
+    const barBaseY = y + barChartH  // bottom of all bars aligned here
     d.days.forEach((day, i) => {
-      const x = M + i * (bw + 3), bH = Math.max((day.v / maxD) * 30, 2), best = day.v === maxD
+      const x = M + i * (bw + barGap)
+      const bH = Math.max((day.v / maxD) * barChartH, 2)
+      const best = day.v === maxD
       doc.setFillColor(best ? 26 : 226, best ? 95 : 232, best ? 213 : 240)
-      doc.roundedRect(x, y + 30 - bH, bw, bH, 1.5, 1.5, "F")
+      doc.roundedRect(x, barBaseY - bH, bw, bH, 1.5, 1.5, "F")
+      // Value label — always 2mm above the bar top
       doc.setFontSize(7); doc.setFont("helvetica", "bold")
       doc.setTextColor(best ? 26 : 100, best ? 95 : 116, best ? 213 : 139)
-      doc.text(`RM ${day.v}`, x + bw / 2, y + 30 - bH - 2, { align: "center" })
+      doc.text(`RM ${day.v}`, x + bw / 2, barBaseY - bH - 2, { align: "center" })
+      // Day label — always 5mm below bar baseline
       doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.setFont("helvetica", "normal")
-      doc.text(day.d, x + bw / 2, y + 36, { align: "center" })
+      doc.text(day.d, x + bw / 2, barBaseY + 5, { align: "center" })
     })
-    y += 46
+    y = barBaseY + 12
 
     // Peak hours
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
     doc.text("Peak Hours", M, y); y += 8
+    const timeColW = 22  // fixed width for time labels
+    const barStartX = M + timeColW + 4  // consistent bar start
+    const barMaxW = CW - timeColW - 20  // leave room for % label
     d.hours.forEach(hr => {
-      const bW = (hr.pct / 100) * CW * 0.7, pk = hr.pct >= 85
+      const bW = (hr.pct / 100) * barMaxW, pk = hr.pct >= 85
+      // Time label — right-aligned in fixed column
       doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139)
-      doc.text(hr.t, M, y + 3)
+      doc.text(hr.t, M + timeColW, y + 3, { align: "right" })
+      // Bar
       doc.setFillColor(pk ? 26 : 226, pk ? 95 : 232, pk ? 213 : 240)
-      doc.roundedRect(M + 38, y - 1, Math.max(bW, 3), 5, 1.5, 1.5, "F")
+      doc.roundedRect(barStartX, y - 1, Math.max(bW, 3), 5, 1.5, 1.5, "F")
+      // Percentage label
       doc.setFontSize(7); doc.setFont("helvetica", "bold")
       doc.setTextColor(pk ? 26 : 100, pk ? 95 : 116, pk ? 213 : 139)
-      doc.text(`${hr.pct}%`, M + 38 + Math.max(bW, 3) + 3, y + 3)
+      doc.text(`${hr.pct}%`, barStartX + Math.max(bW, 3) + 3, y + 3)
       y += 7
     })
     y += 4
