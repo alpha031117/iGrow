@@ -628,51 +628,49 @@ export default function DashboardPage() {
      return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
    }, [])
 
-   // Listen for visibility/focus changes and storage events to sync state
-   useEffect(() => {
-     const handleFocus = () => {
-       console.log("[Dashboard] Window focused, syncing state from localStorage")
-       const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-       if (savedCount > 0 && savedCount !== dashSimCount) {
-         console.log("[Dashboard] Syncing dashSimCount:", savedCount)
-         setDashSimCount(savedCount)
-         dashSimCountRef.current = savedCount
-       }
-     }
+    // Listen for visibility/focus changes and storage events to sync state
+    useEffect(() => {
+      const syncStateFromStorage = () => {
+        const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+        console.log("[Dashboard] Current state dashSimCount:", dashSimCount, "Saved in localStorage:", savedCount)
+        if (savedCount !== dashSimCount) {
+          console.log("[Dashboard] Syncing dashSimCount from localStorage to:", savedCount)
+          setDashSimCount(savedCount)
+          dashSimCountRef.current = savedCount
+        }
+      }
 
-     const handleVisibilityChange = () => {
-       if (document.visibilityState === 'visible') {
-         console.log("[Dashboard] Page became visible, syncing state from localStorage")
-         const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-         if (savedCount > 0 && savedCount !== dashSimCount) {
-           console.log("[Dashboard] Syncing dashSimCount:", savedCount)
-           setDashSimCount(savedCount)
-           dashSimCountRef.current = savedCount
-         }
-       }
-     }
+      const handleFocus = () => {
+        console.log("[Dashboard] Window focused, syncing state")
+        syncStateFromStorage()
+      }
 
-     const handleStorageChange = (e: StorageEvent) => {
-       if (e.key === "igrow_dash_sim_count") {
-         const newCount = parseInt(e.newValue ?? "0")
-         console.log("[Dashboard] Storage event - dashSimCount changed to:", newCount)
-         if (newCount !== dashSimCount) {
-           setDashSimCount(newCount)
-           dashSimCountRef.current = newCount
-         }
-       }
-     }
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          console.log("[Dashboard] Page became visible, syncing state")
+          syncStateFromStorage()
+        }
+      }
 
-     window.addEventListener('focus', handleFocus)
-     document.addEventListener('visibilitychange', handleVisibilityChange)
-     window.addEventListener('storage', handleStorageChange)
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === "igrow_dash_sim_count") {
+          const newCount = parseInt(e.newValue ?? "0")
+          console.log("[Dashboard] Storage event - dashSimCount changed to:", newCount)
+          setDashSimCount(newCount)
+          dashSimCountRef.current = newCount
+        }
+      }
 
-     return () => {
-       window.removeEventListener('focus', handleFocus)
-       document.removeEventListener('visibilitychange', handleVisibilityChange)
-       window.removeEventListener('storage', handleStorageChange)
-     }
-   }, [dashSimCount])
+      window.addEventListener('focus', handleFocus)
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('storage', handleStorageChange)
+
+      return () => {
+        window.removeEventListener('focus', handleFocus)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('storage', handleStorageChange)
+      }
+    }, [])
 
    function runOneDashSimTick() {
      const next = dashSimCountRef.current + 1
