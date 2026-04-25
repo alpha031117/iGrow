@@ -646,6 +646,10 @@ export default function DashboardPage() {
   const [insightsLoading, setInsightsLoading] = useState(false)
   const insightsFetchedRef = useRef<Set<string>>(new Set())
 
+  // Live backend data state (overlaid on static DATA fallback)
+  const [liveData, setLiveData] = useState<Record<string, Partial<PeriodData>>>({})
+  const dataFetchedRef = useRef<Set<string>>(new Set())
+
    useEffect(() => {
      const loadState = () => {
        const savedCount = readStoredDashSimCount()
@@ -775,7 +779,10 @@ export default function DashboardPage() {
   }
 
    const activeKey = activeTab === "week" ? weekFilter : monthFilter
-   const d = DATA[activeKey]
+   const _staticD = DATA[activeKey] ?? DATA.thisWeek
+   const d: PeriodData = liveData[activeKey]
+     ? { ..._staticD, ...liveData[activeKey] }
+     : _staticD
 
    const currentDashSimCount = dashSimCount
 
@@ -823,7 +830,7 @@ export default function DashboardPage() {
     if (insightsFetchedRef.current.has(key)) return
     insightsFetchedRef.current.add(key)
     setInsightsLoading(true)
-    const periodData = DATA[key]
+    const periodData = (liveData[key] ? { ...(DATA[key] ?? DATA.thisWeek), ...liveData[key] } : (DATA[key] ?? DATA.thisWeek)) as PeriodData
     if (!periodData) { setInsightsLoading(false); return }
     const cat = localStorage.getItem("igrow_category") ?? "Food & Drinks"
     const ssm = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
@@ -861,11 +868,35 @@ export default function DashboardPage() {
     }
   }
 
+  async function fetchPeriodData(key: string) {
+    // Skip custom ranges — no backend support yet
+    if (key === "customWeek" || key === "customMonth") return
+    if (dataFetchedRef.current.has(key)) return
+    dataFetchedRef.current.add(key)
+    try {
+      const res = await fetch(`/api/analytics?period=${key}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setLiveData((prev) => ({ ...prev, [key]: data }))
+    } catch (err) {
+      console.warn("[analytics] fallback to static:", err)
+      dataFetchedRef.current.delete(key)
+    }
+  }
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!mounted) return
     const key = activeTab === "week" ? weekFilter : monthFilter
     fetchInsights(key)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, weekFilter, monthFilter, mounted])
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!mounted) return
+    const key = activeTab === "week" ? weekFilter : monthFilter
+    fetchPeriodData(key)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, weekFilter, monthFilter, mounted])
 

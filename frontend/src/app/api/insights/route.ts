@@ -1,4 +1,4 @@
-import { complete } from "@mariozechner/pi-ai"
+import { stream } from "@mariozechner/pi-ai"
 import type { Model } from "@mariozechner/pi-ai"
 
 const HAIKU: Model<"bedrock-converse-stream"> = {
@@ -49,34 +49,49 @@ Respond ONLY with a valid JSON object — no markdown, no code fences, no explan
 
 JSON schema:
 {
-  "tip": { "title": "2-4 words", "body": "1-2 sentences HTML with <strong> for key numbers, max 25 words", "icon": "single emoji" },
-  "health": { "title": "2-4 words", "body": "1-2 sentences HTML with <strong> for key numbers, max 20 words", "icon": "single emoji" }
+  "tip": { "title": "2-4 words", "body": "2-3 sentences HTML with <strong> for key numbers, max 40 words", "icon": "single emoji" },
+  "health": { "title": "2-4 words", "body": "2-3 sentences HTML with <strong> for key numbers, max 35 words", "icon": "single emoji" }
 }
 
 Rules:
-- tip.body: actionable advice tied to a specific data pattern (best day, peak hour, or trend)
-- health.body: one-line business health assessment (growing / stable / dipping)
+- tip.body: connect 2-3 data points (best day + peak hour + week trend) into actionable advice for the merchant
+- health.body: assess business trajectory using week-over-week trend and vs-prev comparison; be specific with numbers
 - Use RM for currency; context is Malaysia
 - Business type: ${payload.category}. SSM registered: ${payload.hasSSM ? "yes" : "no"}.
-- Warm, encouraging tone even for dips`
+- Warm, encouraging tone even for dips — always end with a forward-looking suggestion`
 }
 
 function buildUserMessage(payload: InsightPayload): string {
-  const daysStr = payload.days.map((d) => `${d.d}:${d.v}`).join(", ")
+  const daysStr = payload.days.map((d) => `${d.d}:RM${d.v}`).join(", ")
   return `Period: ${payload.periodLabel}
-Sales: RM ${payload.heroSales} | Txns: ${payload.heroTxn} | Avg: RM ${payload.heroAvg.toFixed(2)}
-vs prev: ${payload.vsPrev >= 0 ? "+" : ""}${payload.vsPrev}% (${payload.vsPrevLabel})
+Sales: RM ${payload.heroSales} | Txns: ${payload.heroTxn} | Avg/txn: RM ${payload.heroAvg.toFixed(2)}
+vs prev period: ${payload.vsPrev >= 0 ? "+" : ""}${payload.vsPrev}% (${payload.vsPrevLabel})
 Best day: ${payload.bestDay} | Daily avg: ${payload.dailyAvg}
-Peak: ${payload.peakHour} (${payload.peakShare} of sales)
-Days (RM): ${daysStr}
-Week trend: ${payload.weekTrend}`
+Peak hour: ${payload.peakHour} (${payload.peakShare} of sales)
+Daily breakdown (RM): ${daysStr}
+Weekly trend: ${payload.weekTrend}`
+}
+
+async function collectStream(eventStream: AsyncIterable<Record<string, unknown>>): Promise<string> {
+  let text = ""
+  for await (const event of eventStream) {
+    if (event.type === "text_delta" && typeof event.delta === "string") {
+      text += event.delta
+    }
+    if (event.type === "error") {
+      const msg = (event.error as { errorMessage?: string })?.errorMessage ?? JSON.stringify(event.error)
+      throw new Error(`Stream error: ${msg}`)
+    }
+    if (event.type === "done") break
+  }
+  return text
 }
 
 export async function POST(request: Request) {
   try {
     const payload: InsightPayload = await request.json()
 
-    const result = await complete(
+    const eventStream = stream(
       HAIKU,
       {
         systemPrompt: buildSystemPrompt(payload),
@@ -91,13 +106,11 @@ export async function POST(request: Request) {
       { region: "ap-southeast-1" }
     )
 
-    const rawText = result.content
-      .filter((c) => c.type === "text")
-      .map((c) => (c as { type: "text"; text: string }).text)
-      .join("")
+    const rawText = await collectStream(eventStream as AsyncIterable<Record<string, unknown>>)
 
+    if (!rawText) throw new Error("Empty response from model")
     const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error("No JSON in response")
+    if (!jsonMatch) throw new Error(`No JSON in response. Raw: ${rawText.slice(0, 200)}`)
 
     const parsed: InsightsResponse = JSON.parse(jsonMatch[0])
     if (!parsed.tip?.body || !parsed.health?.body) throw new Error("Invalid response shape")
