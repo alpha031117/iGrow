@@ -53,10 +53,11 @@ try:
         print(f"  -> {script.name}")
         sql = script.read_text()
         with conn.cursor() as cur:
-            # Split on semicolons, skip empty statements
+            # Split on semicolons, strip leading comment lines, skip empty statements
             for stmt in sql.split(";"):
-                stmt = stmt.strip()
-                if stmt and not stmt.startswith("--"):
+                lines = [l for l in stmt.splitlines() if not l.strip().startswith("--")]
+                stmt = "\n".join(lines).strip()
+                if stmt:
                     try:
                         cur.execute(stmt)
                     except pymysql.err.OperationalError as e:

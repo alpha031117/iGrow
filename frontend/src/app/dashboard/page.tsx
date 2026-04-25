@@ -532,7 +532,7 @@ function AnalysisProgressModal({ onStepsComplete }: { onStepsComplete: () => voi
         </div>
 
         <p className="text-center text-[11px] text-gray-400 mt-5 leading-relaxed">
-          Powered by Claude AI · TNG AlphaGo Launchpad
+          Powered by TNG AlphaGo Launchpad
         </p>
       </div>
     </div>
