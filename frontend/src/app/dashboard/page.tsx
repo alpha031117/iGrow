@@ -35,11 +35,37 @@ const C = {
 }
 
 // ─── Simulation data ──────────────────────────────────────────────────
-const DASH_SIM_DAYS = [
-  { d: "Mon", v: 85 }, { d: "Tue", v: 95 }, { d: "Wed", v: 105 },
-  { d: "Thu", v: 110 }, { d: "Fri", v: 150 }, { d: "Sat", v: 175 }, { d: "Sun", v: 72 },
-  { d: "Mon", v: 102 }, { d: "Tue", v: 114 }, { d: "Wed", v: 126 },
-  { d: "Thu", v: 132 }, { d: "Fri", v: 180 }, { d: "Sat", v: 210 }, { d: "Sun", v: 84 },
+type SimDay = { d: string; v: number; txn: number; hours: { t: string; pct: number }[]; peakHour: string; peakShare: string; arriveBy: string }
+
+const DASH_SIM_DATA: SimDay[] = [
+  { d: "Mon", v: 112, txn: 17, peakHour: "8–9 PM", peakShare: "54%", arriveBy: "7:00 PM",
+    hours: [{ t: "4–5 PM", pct: 4 }, { t: "5–6 PM", pct: 8 }, { t: "6–7 PM", pct: 42 }, { t: "7–8 PM", pct: 68 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 55 }, { t: "10–11 PM", pct: 18 }, { t: "11–12 AM", pct: 6 }] },
+  { d: "Tue", v: 158, txn: 24, peakHour: "7–9 PM", peakShare: "61%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 6 }, { t: "5–6 PM", pct: 14 }, { t: "6–7 PM", pct: 58 }, { t: "7–8 PM", pct: 88 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 72 }, { t: "10–11 PM", pct: 30 }, { t: "11–12 AM", pct: 9 }] },
+  { d: "Wed", v: 91, txn: 14, peakHour: "8–9 PM", peakShare: "56%", arriveBy: "7:00 PM",
+    hours: [{ t: "4–5 PM", pct: 3 }, { t: "5–6 PM", pct: 9 }, { t: "6–7 PM", pct: 38 }, { t: "7–8 PM", pct: 70 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 58 }, { t: "10–11 PM", pct: 22 }, { t: "11–12 AM", pct: 6 }] },
+  { d: "Thu", v: 189, txn: 28, peakHour: "7–9 PM", peakShare: "63%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 7 }, { t: "5–6 PM", pct: 16 }, { t: "6–7 PM", pct: 52 }, { t: "7–8 PM", pct: 91 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 74 }, { t: "10–11 PM", pct: 38 }, { t: "11–12 AM", pct: 12 }] },
+  { d: "Fri", v: 245, txn: 36, peakHour: "7–9 PM", peakShare: "65%", arriveBy: "6:00 PM",
+    hours: [{ t: "4–5 PM", pct: 10 }, { t: "5–6 PM", pct: 20 }, { t: "6–7 PM", pct: 62 }, { t: "7–8 PM", pct: 95 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 80 }, { t: "10–11 PM", pct: 42 }, { t: "11–12 AM", pct: 14 }] },
+  { d: "Sat", v: 278, txn: 41, peakHour: "8–10 PM", peakShare: "67%", arriveBy: "6:00 PM",
+    hours: [{ t: "4–5 PM", pct: 12 }, { t: "5–6 PM", pct: 24 }, { t: "6–7 PM", pct: 68 }, { t: "7–8 PM", pct: 92 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 88 }, { t: "10–11 PM", pct: 52 }, { t: "11–12 AM", pct: 18 }] },
+  { d: "Sun", v: 54, txn: 8, peakHour: "8–9 PM", peakShare: "52%", arriveBy: "7:30 PM",
+    hours: [{ t: "4–5 PM", pct: 3 }, { t: "5–6 PM", pct: 7 }, { t: "6–7 PM", pct: 28 }, { t: "7–8 PM", pct: 60 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 45 }, { t: "10–11 PM", pct: 15 }, { t: "11–12 AM", pct: 5 }] },
+  { d: "Mon", v: 78, txn: 12, peakHour: "8–9 PM", peakShare: "55%", arriveBy: "7:00 PM",
+    hours: [{ t: "4–5 PM", pct: 4 }, { t: "5–6 PM", pct: 9 }, { t: "6–7 PM", pct: 36 }, { t: "7–8 PM", pct: 72 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 50 }, { t: "10–11 PM", pct: 20 }, { t: "11–12 AM", pct: 5 }] },
+  { d: "Tue", v: 172, txn: 26, peakHour: "7–9 PM", peakShare: "62%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 8 }, { t: "5–6 PM", pct: 16 }, { t: "6–7 PM", pct: 55 }, { t: "7–8 PM", pct: 90 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 68 }, { t: "10–11 PM", pct: 32 }, { t: "11–12 AM", pct: 10 }] },
+  { d: "Wed", v: 134, txn: 20, peakHour: "7–9 PM", peakShare: "59%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 5 }, { t: "5–6 PM", pct: 12 }, { t: "6–7 PM", pct: 48 }, { t: "7–8 PM", pct: 86 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 62 }, { t: "10–11 PM", pct: 30 }, { t: "11–12 AM", pct: 8 }] },
+  { d: "Thu", v: 218, txn: 32, peakHour: "7–9 PM", peakShare: "64%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 8 }, { t: "5–6 PM", pct: 17 }, { t: "6–7 PM", pct: 54 }, { t: "7–8 PM", pct: 88 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 76 }, { t: "10–11 PM", pct: 40 }, { t: "11–12 AM", pct: 13 }] },
+  { d: "Fri", v: 302, txn: 45, peakHour: "7–9 PM", peakShare: "66%", arriveBy: "6:00 PM",
+    hours: [{ t: "4–5 PM", pct: 11 }, { t: "5–6 PM", pct: 22 }, { t: "6–7 PM", pct: 65 }, { t: "7–8 PM", pct: 96 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 82 }, { t: "10–11 PM", pct: 45 }, { t: "11–12 AM", pct: 15 }] },
+  { d: "Sat", v: 356, txn: 52, peakHour: "8–10 PM", peakShare: "70%", arriveBy: "5:30 PM",
+    hours: [{ t: "4–5 PM", pct: 14 }, { t: "5–6 PM", pct: 28 }, { t: "6–7 PM", pct: 72 }, { t: "7–8 PM", pct: 94 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 92 }, { t: "10–11 PM", pct: 58 }, { t: "11–12 AM", pct: 20 }] },
+  { d: "Sun", v: 62, txn: 9, peakHour: "8–9 PM", peakShare: "51%", arriveBy: "7:30 PM",
+    hours: [{ t: "4–5 PM", pct: 2 }, { t: "5–6 PM", pct: 6 }, { t: "6–7 PM", pct: 24 }, { t: "7–8 PM", pct: 56 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 42 }, { t: "10–11 PM", pct: 12 }, { t: "11–12 AM", pct: 4 }] },
 ]
 const DASH_SIM_THRESHOLD = 14
 const DASH_SIM_INTERVAL_MS = 1200
@@ -550,6 +576,7 @@ export default function DashboardPage() {
 
   // Simulation state
   const [dashSimCount, setDashSimCount] = useState(0)
+  const [activeSimBarIdx, setActiveSimBarIdx] = useState<number | null>(null)
   const [simRunning, setSimRunning] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showLaunchpadNudge, setShowLaunchpadNudge] = useState(false)
@@ -561,58 +588,75 @@ export default function DashboardPage() {
   const dashSimCountRef = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    setMounted(true)
-    const now = new Date().toISOString().slice(0, 10)
-    setDateFrom(now); setDateTo(now)
+   useEffect(() => {
+     setMounted(true)
+     const now = new Date().toISOString().slice(0, 10)
+     setDateFrom(now); setDateTo(now)
 
-    const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-    setDashSimCount(savedCount)
-    dashSimCountRef.current = savedCount
+     const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+     setDashSimCount(savedCount)
+     dashSimCountRef.current = savedCount
 
-    const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
-    setLaunchpadAccepted(accepted)
+     const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
+     setLaunchpadAccepted(accepted)
 
-    const savedTier = localStorage.getItem("igrow_tier") as "1" | "2" | null
-    const savedPkg = localStorage.getItem("igrow_package") as "A" | "B" | "track1" | "track2" | null
-    if (savedTier) {
-      setRecommendedTier(savedTier)
-      setRecommendedPackage(savedPkg ?? "")
-    }
-  }, [])
+     const savedTier = localStorage.getItem("igrow_tier") as "1" | "2" | null
+     const savedPkg = localStorage.getItem("igrow_package") as "A" | "B" | "track1" | "track2" | null
+     if (savedTier) {
+       setRecommendedTier(savedTier)
+       setRecommendedPackage(savedPkg ?? "")
+     }
+
+     // If simulation was completed but nudges weren't shown/closed, show them now
+     const simCompleted = localStorage.getItem("igrow_sim_completed") === "true"
+     if (simCompleted && savedCount >= DASH_SIM_THRESHOLD && !accepted) {
+       const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+       if (!userHasSSM) {
+         setShowSsmNudge(true)
+       } else if (savedTier) {
+         setShowLaunchpadNudge(true)
+       }
+     }
+   }, [])
 
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [])
 
-  function runOneDashSimTick() {
-    const next = dashSimCountRef.current + 1
-    dashSimCountRef.current = next
-    setDashSimCount(next)
-    localStorage.setItem("igrow_dash_sim_count", String(next))
+   function runOneDashSimTick() {
+     const next = dashSimCountRef.current + 1
+     dashSimCountRef.current = next
+     setDashSimCount(next)
+     setActiveSimBarIdx(6)  // newest day is always rightmost bar
+     localStorage.setItem("igrow_dash_sim_count", String(next))
 
-    if (next >= DASH_SIM_THRESHOLD) {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      intervalRef.current = null
-      setSimRunning(false)
-      setIsAnalyzing(true)
-      setTimeout(() => {
-        setIsAnalyzing(false)
-        const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
-        if (!userHasSSM) {
-          setShowSsmNudge(true)
-          return
-        }
-        const cat = localStorage.getItem("igrow_category") ?? ""
-        const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
-        const tier: "1" | "2" = "2"
-        const pkg: "track1" | "track2" = isFood ? "track1" : "track2"
-        setRecommendedTier(tier)
-        setRecommendedPackage(pkg)
-        setShowLaunchpadNudge(true)
-      }, 2500)
-    }
-  }
+     if (next >= DASH_SIM_THRESHOLD) {
+       if (intervalRef.current) clearInterval(intervalRef.current)
+       intervalRef.current = null
+       setSimRunning(false)
+       setIsAnalyzing(true)
+       localStorage.setItem("igrow_sim_completed", "true")
+       setTimeout(() => {
+         setIsAnalyzing(false)
+         const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+         if (!userHasSSM) {
+           setShowSsmNudge(true)
+           localStorage.setItem("igrow_ssm_nudge_shown", "true")
+           return
+         }
+         const cat = localStorage.getItem("igrow_category") ?? ""
+         const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
+         const tier: "1" | "2" = "2"
+         const pkg: "track1" | "track2" = isFood ? "track1" : "track2"
+         setRecommendedTier(tier)
+         setRecommendedPackage(pkg)
+         localStorage.setItem("igrow_tier", tier)
+         localStorage.setItem("igrow_package", pkg)
+         setShowLaunchpadNudge(true)
+         localStorage.setItem("igrow_launchpad_nudge_shown", "true")
+       }, 2500)
+     }
+   }
 
   function handleStartDashSimulate() {
     if (simRunning || launchpadAccepted || dashSimCount >= DASH_SIM_THRESHOLD) return
@@ -632,12 +676,25 @@ export default function DashboardPage() {
   const d = DATA[activeKey]
 
   // Simulation continues from existing demo data — append new days and show last 7
-  const simRevealedDays = DASH_SIM_DAYS.slice(0, dashSimCount)
+  const simRevealedDays = DASH_SIM_DATA.slice(0, dashSimCount)
   const allChartDays = [...d.days, ...simRevealedDays]
   const simTotalSales = simRevealedDays.reduce((acc, day) => acc + day.v, 0)
+  const simTotalTxn = simRevealedDays.reduce((acc, day) => acc + day.txn, 0)
   const displaySales = d.heroSales + simTotalSales
-  const displayTxn = d.heroTxn + dashSimCount * 14
+  const displayTxn = d.heroTxn + simTotalTxn
   const displayAvg = displayTxn > 0 ? displaySales / displayTxn : d.heroAvg
+
+  // Derive which sim day the active bar corresponds to
+  const activeSimDayData: SimDay | null = (() => {
+    if (activeSimBarIdx === null || dashSimCount === 0) return null
+    const allIdx = dashSimCount + activeSimBarIdx  // position in allChartDays
+    const simIdx = allIdx - 7  // subtract the 7 base days
+    return simIdx >= 0 && simIdx < simRevealedDays.length ? DASH_SIM_DATA[simIdx] : null
+  })()
+  const activeHours = activeSimDayData ? activeSimDayData.hours : d.hours
+  const activePeakHour = activeSimDayData ? activeSimDayData.peakHour : d.peakHour
+  const activePeakShare = activeSimDayData ? activeSimDayData.peakShare : d.peakShare
+  const activeArriveBy = activeSimDayData ? activeSimDayData.arriveBy : d.arriveBy
 
   function applyCustom() {
     if (!dateFrom || !dateTo) return
@@ -951,33 +1008,53 @@ export default function DashboardPage() {
         <div className="flex items-end gap-1.5 h-28 pt-3">
           {chartDays.map((x, i) => {
             const ht = Math.max((x.v / maxDay) * 90, x.v > 0 ? 4 : 2)
-            const best = x.v === maxDay && x.v > 0
             const isEmpty = x.v === 0
+            const isActiveBar = activeSimBarIdx === i && dashSimCount > 0 && !isEmpty
+            const isSimDay = dashSimCount > 0 && (dashSimCount + i) >= 7
             return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
+              <div
+                key={i}
+                className={`flex-1 flex flex-col items-center gap-1.5 group ${isSimDay && !isEmpty ? "cursor-pointer" : ""}`}
+                onClick={() => { if (isSimDay && !isEmpty) setActiveSimBarIdx(i) }}
+              >
                 <div className="relative w-full rounded-lg transition-all duration-500" style={{
                   height: ht,
-                  background: isEmpty ? C.g100 : (best ? `linear-gradient(180deg,${C.pri},${C.priDark})` : C.g200),
+                  background: isEmpty ? C.g100
+                    : isActiveBar ? `linear-gradient(180deg,${C.pri},${C.priDark})`
+                    : C.g200,
+                  boxShadow: isActiveBar ? `0 0 0 2px ${C.pri}` : "none",
                 }}>
                   {!isEmpty && (
-                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ color: best ? C.pri : C.g700 }}>
+                    <span className={`absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold whitespace-nowrap transition-opacity ${isActiveBar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                      style={{ color: isActiveBar ? C.pri : C.g700 }}>
                       RM {x.v}
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-semibold" style={{ color: best ? C.pri : C.g400 }}>{x.d}</span>
+                <span className="text-[11px] font-semibold" style={{ color: isActiveBar ? C.pri : C.g400 }}>{x.d}</span>
               </div>
             )
           })}
         </div>
+        {activeSimDayData && (
+          <p className="text-[11px] font-medium mt-3 text-center" style={{ color: C.g400 }}>
+            Tap a bar to see that day&apos;s timeline
+          </p>
+        )}
       </Card>
 
       {/* ── Peak hours ── */}
-      <SectionLabel>Evening Timeline</SectionLabel>
+      <div className="flex items-center justify-between px-6 pb-2.5 pt-1">
+        <p className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: C.g400 }}>Evening Timeline</p>
+        {activeSimDayData && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: C.priBg, color: C.pri }}>
+            {activeSimDayData.d}
+          </span>
+        )}
+      </div>
       <Card>
         <div className="flex flex-col gap-0.5">
-          {d.hours.map((h, i) => {
+          {activeHours.map((h, i) => {
             const isPeak = h.pct >= 85
             return (
               <div key={i} className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl" style={{ backgroundColor: isPeak ? C.priBg : "transparent" }}>
@@ -993,7 +1070,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2 mt-3.5 px-3.5 py-3 rounded-xl text-[12.5px] font-semibold leading-snug" style={{ backgroundColor: C.priBg, color: C.pri }}>
           <Clock className="w-4 h-4 shrink-0 opacity-70" />
-          <span>Peak: <strong>{d.peakHour}</strong> ({d.peakShare}) · Arrive by {d.arriveBy}</span>
+          <span>Peak: <strong>{activePeakHour}</strong> ({activePeakShare}) · Arrive by {activeArriveBy}</span>
         </div>
       </Card>
 
