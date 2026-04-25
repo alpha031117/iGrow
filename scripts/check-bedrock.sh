@@ -39,6 +39,7 @@ import os, sys, json, hashlib, hmac, datetime
 try:
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError
+    from urllib.parse import quote
 except ImportError:
     print("❌  Python 3 required")
     sys.exit(1)
@@ -49,7 +50,9 @@ token      = os.environ.get("AWS_SESSION_TOKEN", "")
 region     = os.environ.get("AWS_REGION", "ap-southeast-1")
 model      = "anthropic.claude-haiku-4-5-20251001-v1:0"
 host       = f"bedrock-runtime.{region}.amazonaws.com"
-endpoint   = f"https://{host}/model/{model.replace(':', '%3A')}/converse"
+# Use plain colon in URL — `:` is valid in URI path segments
+# Encode only in canonical_uri below (SigV4 requires it there)
+endpoint   = f"https://{host}/model/{model}/converse"
 service    = "bedrock"
 body       = json.dumps({"messages":[{"role":"user","content":[{"text":"ping"}]}],"inferenceConfig":{"maxTokens":10}}).encode()
 
@@ -67,7 +70,7 @@ amz_date   = now.strftime("%Y%m%dT%H%M%SZ")
 date_stamp = now.strftime("%Y%m%d")
 
 payload_hash = hashlib.sha256(body).hexdigest()
-canonical_uri = f"/model/{model.replace(':', '%3A')}/converse"
+canonical_uri = f"/model/{quote(model, safe='')}/converse"
 canonical_qs  = ""
 headers_dict  = {
     "content-type": "application/json",

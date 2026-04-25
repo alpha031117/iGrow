@@ -68,7 +68,7 @@ git fetch origin "$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
 log "Checking AWS Bedrock credentials"
-bash "$APP_DIR/scripts/check-bedrock.sh"
+bash "$APP_DIR/scripts/check-bedrock.sh" || echo "⚠️  Bedrock credentials invalid or expired — AI features will use fallback responses. Update AWS_* env vars to restore AI."
 
 log "Installing backend dependencies"
 cd "$BACKEND_DIR"
