@@ -119,7 +119,10 @@ export default function HomePage() {
   const [isOnboarded, setIsOnboarded] = useState(false)
 
   useEffect(() => {
-    setIsOnboarded(localStorage.getItem('igrow_onboarded') === 'true')
+    // Clear all iGrow state on home page load so refresh resets the demo flow
+    const keys = ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
+    keys.forEach(k => localStorage.removeItem(k))
+    setIsOnboarded(false)
   }, [])
 
   function handleLaunchpadClick() {

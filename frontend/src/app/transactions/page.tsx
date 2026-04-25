@@ -126,7 +126,9 @@ export default function TransactionsPage() {
   const [isOnboarded, setIsOnboarded] = useState(false)
 
   useEffect(() => {
-    setIsOnboarded(localStorage.getItem('igrow_onboarded') === 'true')
+    const keys = ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
+    keys.forEach(k => localStorage.removeItem(k))
+    setIsOnboarded(false)
   }, [])
 
   function handleLaunchpadClick() {
