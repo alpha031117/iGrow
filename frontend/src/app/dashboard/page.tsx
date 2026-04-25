@@ -50,8 +50,8 @@ const DASH_SIM_DATA: SimDay[] = [
     hours: [{ t: "4–5 PM", pct: 10 }, { t: "5–6 PM", pct: 20 }, { t: "6–7 PM", pct: 62 }, { t: "7–8 PM", pct: 95 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 80 }, { t: "10–11 PM", pct: 42 }, { t: "11–12 AM", pct: 14 }] },
   { d: "Sat", v: 278, txn: 41, peakHour: "8–10 PM", peakShare: "67%", arriveBy: "6:00 PM",
     hours: [{ t: "4–5 PM", pct: 12 }, { t: "5–6 PM", pct: 24 }, { t: "6–7 PM", pct: 68 }, { t: "7–8 PM", pct: 92 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 88 }, { t: "10–11 PM", pct: 52 }, { t: "11–12 AM", pct: 18 }] },
-  { d: "Sun", v: 54, txn: 8, peakHour: "8–9 PM", peakShare: "52%", arriveBy: "7:30 PM",
-    hours: [{ t: "4–5 PM", pct: 3 }, { t: "5–6 PM", pct: 7 }, { t: "6–7 PM", pct: 28 }, { t: "7–8 PM", pct: 60 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 45 }, { t: "10–11 PM", pct: 15 }, { t: "11–12 AM", pct: 5 }] },
+  { d: "Sun", v: 128, txn: 19, peakHour: "7–9 PM", peakShare: "58%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 8 }, { t: "5–6 PM", pct: 18 }, { t: "6–7 PM", pct: 48 }, { t: "7–8 PM", pct: 82 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 64 }, { t: "10–11 PM", pct: 28 }, { t: "11–12 AM", pct: 9 }] },
   { d: "Mon", v: 78, txn: 12, peakHour: "8–9 PM", peakShare: "55%", arriveBy: "7:00 PM",
     hours: [{ t: "4–5 PM", pct: 4 }, { t: "5–6 PM", pct: 9 }, { t: "6–7 PM", pct: 36 }, { t: "7–8 PM", pct: 72 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 50 }, { t: "10–11 PM", pct: 20 }, { t: "11–12 AM", pct: 5 }] },
   { d: "Tue", v: 172, txn: 26, peakHour: "7–9 PM", peakShare: "62%", arriveBy: "6:30 PM",
@@ -64,8 +64,8 @@ const DASH_SIM_DATA: SimDay[] = [
     hours: [{ t: "4–5 PM", pct: 11 }, { t: "5–6 PM", pct: 22 }, { t: "6–7 PM", pct: 65 }, { t: "7–8 PM", pct: 96 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 82 }, { t: "10–11 PM", pct: 45 }, { t: "11–12 AM", pct: 15 }] },
   { d: "Sat", v: 356, txn: 52, peakHour: "8–10 PM", peakShare: "70%", arriveBy: "5:30 PM",
     hours: [{ t: "4–5 PM", pct: 14 }, { t: "5–6 PM", pct: 28 }, { t: "6–7 PM", pct: 72 }, { t: "7–8 PM", pct: 94 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 92 }, { t: "10–11 PM", pct: 58 }, { t: "11–12 AM", pct: 20 }] },
-  { d: "Sun", v: 62, txn: 9, peakHour: "8–9 PM", peakShare: "51%", arriveBy: "7:30 PM",
-    hours: [{ t: "4–5 PM", pct: 2 }, { t: "5–6 PM", pct: 6 }, { t: "6–7 PM", pct: 24 }, { t: "7–8 PM", pct: 56 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 42 }, { t: "10–11 PM", pct: 12 }, { t: "11–12 AM", pct: 4 }] },
+  { d: "Sun", v: 148, txn: 22, peakHour: "7–9 PM", peakShare: "60%", arriveBy: "6:30 PM",
+    hours: [{ t: "4–5 PM", pct: 9 }, { t: "5–6 PM", pct: 20 }, { t: "6–7 PM", pct: 52 }, { t: "7–8 PM", pct: 86 }, { t: "8–9 PM", pct: 100 }, { t: "9–10 PM", pct: 68 }, { t: "10–11 PM", pct: 32 }, { t: "11–12 AM", pct: 10 }] },
 ]
 const DASH_SIM_THRESHOLD = 14
 const DASH_SIM_INTERVAL_MS = 1200
@@ -235,9 +235,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Card({ children, className }: { children: React.ReactNode; className?: string }) {
+function Card({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`bg-white rounded-[20px] p-5 mx-5 mb-4 shadow-sm ${className ?? ""}`}>
+    <div id={id} className={`bg-white rounded-[20px] p-5 mx-5 mb-4 shadow-sm ${className ?? ""}`}>
       {children}
     </div>
   )
@@ -629,7 +629,7 @@ export default function DashboardPage() {
 
   // Simulation state
   const [dashSimCount, setDashSimCount] = useState(0)
-  const [activeSimBarIdx, setActiveSimBarIdx] = useState<number | null>(null)
+  const [activeBarIdx, setActiveBarIdx] = useState<number | null>(6)
   const [simRunning, setSimRunning] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showLaunchpadNudge, setShowLaunchpadNudge] = useState(false)
@@ -651,7 +651,7 @@ export default function DashboardPage() {
        const savedCount = readStoredDashSimCount()
        setDashSimCount(savedCount)
        dashSimCountRef.current = savedCount
-       setActiveSimBarIdx(savedCount > 0 ? 6 : null)
+       setActiveBarIdx(6)
 
        const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
        setLaunchpadAccepted(accepted)
@@ -692,7 +692,7 @@ export default function DashboardPage() {
         const savedCount = readStoredDashSimCount()
         dashSimCountRef.current = savedCount
         setDashSimCount(savedCount)
-        setActiveSimBarIdx(savedCount > 0 ? 6 : null)
+        setActiveBarIdx(6)
       }
 
       const handleFocus = () => {
@@ -726,7 +726,7 @@ export default function DashboardPage() {
       const next = dashSimCountRef.current + 1
       dashSimCountRef.current = next
       setDashSimCount(next)
-      setActiveSimBarIdx(6)  // newest day is always rightmost bar
+      setActiveBarIdx(6)  // newest day is always rightmost bar
       localStorage.setItem(DASH_SIM_COUNT_KEY, String(next))
 
      if (next >= DASH_SIM_THRESHOLD) {
@@ -769,7 +769,9 @@ export default function DashboardPage() {
     localStorage.setItem("igrow_launchpad_accepted", "true")
     setLaunchpadAccepted(true)
     setShowLaunchpadNudge(false)
-    router.push("/programs#recommended")
+    setTimeout(() => {
+      document.getElementById("launchpad-card")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 100)
   }
 
    const activeKey = activeTab === "week" ? weekFilter : monthFilter
@@ -779,20 +781,26 @@ export default function DashboardPage() {
 
    // Simulation continues from existing demo data — append new days and show last 7
    const simRevealedDays = DASH_SIM_DATA.slice(0, currentDashSimCount)
-   const allChartDays = [...d.days, ...simRevealedDays]
+   // Tag each chart entry with its SimDay data directly to avoid index arithmetic
+   // Base days use DASH_SIM_DATA week-1 entries (same Mon–Sun) for per-day timeline
+   type ChartEntry = { d: string; v: number; simData: SimDay | null }
+   const allChartDays: ChartEntry[] = [
+     ...d.days.map((dd, i) => ({ d: dd.d, v: dd.v, simData: DASH_SIM_DATA[i] ?? null })),
+     ...simRevealedDays.map(sd => ({ d: sd.d, v: sd.v, simData: sd })),
+   ]
    const simTotalSales = simRevealedDays.reduce((acc, day) => acc + day.v, 0)
    const simTotalTxn = simRevealedDays.reduce((acc, day) => acc + day.txn, 0)
    const displaySales = d.heroSales + simTotalSales
    const displayTxn = d.heroTxn + simTotalTxn
    const displayAvg = displayTxn > 0 ? displaySales / displayTxn : d.heroAvg
 
-   // Derive which sim day the active bar corresponds to
-   const activeSimDayData: SimDay | null = (() => {
-     if (activeSimBarIdx === null || currentDashSimCount === 0) return null
-     const allIdx = currentDashSimCount + activeSimBarIdx  // position in allChartDays
-     const simIdx = allIdx - 7  // subtract the 7 base days
-     return simIdx >= 0 && simIdx < simRevealedDays.length ? DASH_SIM_DATA[simIdx] : null
-   })()
+   const chartDays = allChartDays.slice(-7)
+   // Need chartDaysEarly alias for selectedDayLabel (used before !mounted guard)
+   const chartDaysEarly = chartDays
+
+   const activeEntry = activeBarIdx !== null ? chartDays[activeBarIdx] : null
+   const activeSimDayData: SimDay | null = activeEntry?.simData ?? null
+  const selectedDayLabel: string | null = activeEntry?.d ?? null
   const activeHours = activeSimDayData ? activeSimDayData.hours : d.hours
   const activePeakHour = activeSimDayData ? activeSimDayData.peakHour : d.peakHour
   const activePeakShare = activeSimDayData ? activeSimDayData.peakShare : d.peakShare
@@ -861,6 +869,10 @@ export default function DashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, weekFilter, monthFilter, mounted])
 
+  // Reset selected bar when period changes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => { setActiveBarIdx(null) }, [activeTab, weekFilter, monthFilter])
+
   if (!mounted) return null
 
   const hasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
@@ -876,7 +888,6 @@ export default function DashboardPage() {
   const avgTxnValue = totalSimRevenue / totalSimTxn
   const matchScore = Math.min(60 + (hasSSM ? 15 : 0) + (wowGrowth > 0 ? 10 : 0) + 7, 97)
 
-  const chartDays = allChartDays.slice(-7)
   const maxDay = Math.max(...chartDays.map(x => x.v), 1)
   const weeks = d.weeks.filter(w => w.v !== null)
   const maxWeek = weeks.length ? Math.max(...weeks.map(x => x.v)) : 1
@@ -1020,7 +1031,7 @@ export default function DashboardPage() {
         ]
         const signals = recommendedTier === "1" ? tier1Signals : tier2Signals
         return (
-          <Card>
+          <Card id="launchpad-card">
             {/* Section A — Header + AI attribution + match bar */}
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
@@ -1195,17 +1206,6 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <p className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: C.g400 }}>Sales By Day</p>
-            {!launchpadAccepted && (
-              <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={{
-                  backgroundColor: hasSSM ? "#DCFCE7" : "#FEF3C7",
-                  color: hasSSM ? "#166534" : "#92400E",
-                }}
-              >
-                {hasSSM ? "SSM ✓" : "No SSM"}
-              </span>
-            )}
           </div>
           {!launchpadAccepted && (
              <button
@@ -1232,13 +1232,12 @@ export default function DashboardPage() {
           {chartDays.map((x, i) => {
              const ht = Math.max((x.v / maxDay) * 90, x.v > 0 ? 4 : 2)
              const isEmpty = x.v === 0
-             const isActiveBar = activeSimBarIdx === i && currentDashSimCount > 0 && !isEmpty
-             const isSimDay = currentDashSimCount > 0 && (currentDashSimCount + i) >= 7
+             const isActiveBar = activeBarIdx === i && !isEmpty
             return (
               <div
                 key={i}
-                className={`flex-1 flex flex-col items-center gap-1.5 group ${isSimDay && !isEmpty ? "cursor-pointer" : ""}`}
-                onClick={() => { if (isSimDay && !isEmpty) setActiveSimBarIdx(i) }}
+                className={`flex-1 flex flex-col items-center gap-1.5 group ${!isEmpty ? "cursor-pointer" : ""}`}
+                onClick={() => { if (!isEmpty) setActiveBarIdx(prev => prev === i ? null : i) }}
               >
                 <div className="relative w-full rounded-lg transition-all duration-500" style={{
                   height: ht,
@@ -1259,19 +1258,15 @@ export default function DashboardPage() {
             )
           })}
         </div>
-        {activeSimDayData && (
-          <p className="text-[11px] font-medium mt-3 text-center" style={{ color: C.g400 }}>
-            Tap a bar to see that day&apos;s timeline
-          </p>
-        )}
+
       </Card>
 
       {/* ── Peak hours ── */}
       <div className="flex items-center justify-between px-6 pb-2.5 pt-1">
         <p className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: C.g400 }}>Evening Timeline</p>
-        {activeSimDayData && (
+        {selectedDayLabel && (
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: C.priBg, color: C.pri }}>
-            {activeSimDayData.d}
+            {selectedDayLabel}
           </span>
         )}
       </div>

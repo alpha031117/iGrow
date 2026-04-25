@@ -238,10 +238,10 @@ function ApplySheet({
         </p>
 
         <button
-          onClick={() => setSubmitted(true)}
+          onClick={onClose}
           className="w-full rounded-full py-4 font-bold text-[15px] text-white mb-3 active:scale-95 transition-transform shadow-md"
           style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
-          Submit Expression of Interest →
+          Take me to BizCash →
         </button>
         <button onClick={onClose}
           className="w-full rounded-full py-3.5 font-semibold text-[14px] border-2 border-[#E5EBF8] text-[#6B7280] hover:bg-[#F5F8FF] transition-colors">
@@ -253,16 +253,16 @@ function ApplySheet({
 }
 
 // ─── Static analytics (deterministic from simulation data) ───────────────────
-const WEEK1 = 1127
-const WEEK2 = 1322
+const WEEK1 = 1201
+const WEEK2 = 1408
 const WOW_GROWTH = 17
-const TOTAL_REVENUE = 2449
-const TOTAL_TXN = 318
+const TOTAL_REVENUE = 2609
+const TOTAL_TXN = 388
 const AVG_TXN = (TOTAL_REVENUE / TOTAL_TXN).toFixed(2)
 const BEST_DAY = { d: "Sat", v: 356 }
 
 const AGENT_STEPS = [
-  { icon: "bar", label: "Scanned TNG merchant transaction history", detail: "318 transactions · RM 2,449 total revenue", ms: "0.3s" },
+  { icon: "bar", label: "Scanned TNG merchant transaction history", detail: "388 transactions · RM 2,609 total revenue", ms: "0.3s" },
   { icon: "trend", label: "Detected week-over-week revenue growth", detail: `Week 1 RM ${WEEK1} → Week 2 RM ${WEEK2} (+${WOW_GROWTH}%)`, ms: "0.4s" },
   { icon: "shield", label: "Verified SSM registration status", detail: "SSM confirmed → unlocks BizCash Package B ceiling", ms: "0.2s" },
   { icon: "bar", label: "Scored against 4 available programs", detail: "Package B: 87% · track1: 71% · Package A: 58% · track2: 44%", ms: "0.6s" },
@@ -299,8 +299,8 @@ export default function ProgramsPage() {
     }
 
     const simCount = Number.parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0", 10)
-    const revenue = simCount >= 14 ? "2,449" : "—"
-    const txn = simCount >= 14 ? "318" : "—"
+    const revenue = simCount >= 14 ? "2,609" : "—"
+    const txn = simCount >= 14 ? "388" : "—"
     setPrefilled({ name: "My Business", category: cat || "Food & Drinks", revenue, txn })
 
     if (window.location.hash === "#recommended") {
