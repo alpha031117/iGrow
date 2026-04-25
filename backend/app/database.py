@@ -10,7 +10,15 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:password@localhost:3306/brisval_db",
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Build SSL connect args — if SSL_CA is provided, verify against the cert;
+# otherwise enable SSL without cert verification (still encrypted).
+_ssl_ca = os.getenv("SSL_CA")
+if _ssl_ca:
+    _ssl_args = {"ssl": {"ca": _ssl_ca}}
+else:
+    _ssl_args = {"ssl": {"check_hostname": False, "verify_mode": 0}}
+
+engine = create_engine(DATABASE_URL, connect_args=_ssl_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
