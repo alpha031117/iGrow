@@ -411,9 +411,6 @@ export default function HomePage() {
             >
               {isOnboarded ? '🏢 My Business →' : '+ AlphaGo Launchpad'}
             </button>
-            <button className="flex items-center gap-1 text-white text-[13px] font-semibold px-4 py-2 rounded-full border border-white/30 bg-white/10 hover:bg-white/20 transition-colors">
-              Transactions →
-            </button>
           </div>
         </div>
       </div>
