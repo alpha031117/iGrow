@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { dummyTransactions, RawTransaction } from '../data'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLockScroll } from '@/context/scroll-lock'
 
 type Transaction = {
   id: string | number
@@ -124,6 +125,7 @@ export default function TransactionsPage() {
   const router = useRouter()
   const [showConsent, setShowConsent] = useState(false)
   const [isOnboarded, setIsOnboarded] = useState(false)
+  useLockScroll(showConsent)
 
   useEffect(() => {
     const keys = ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']

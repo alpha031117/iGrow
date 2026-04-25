@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useLockScroll } from "@/context/scroll-lock"
 import {
   ArrowLeft, CheckCircle2, Circle, ChevronRight,
   QrCode, BarChart3, Megaphone, Banknote, X, Download, Share2, Loader2,
@@ -94,48 +95,47 @@ function QrModal({
   const mid = "TNG-BIZ-20260425"
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          className="px-5 py-4 flex items-center justify-between"
+          className="px-4 py-3 flex items-center justify-between rounded-t-3xl"
           style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}
         >
           <div>
-            <p className="text-blue-200 text-[11px] font-medium uppercase tracking-wider">Merchant QR</p>
-            <p className="text-white font-bold text-[16px]">{businessName}</p>
+            <p className="text-blue-200 text-[10px] font-medium uppercase tracking-wider">Merchant QR</p>
+            <p className="text-white font-bold text-[14px]">{businessName}</p>
           </div>
           <button onClick={onClose} className="text-white/60 hover:text-white">
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* QR */}
-        <div className="flex flex-col items-center px-6 pt-6 pb-4 gap-3">
-          <div className="p-3 rounded-2xl border-2 border-[#E5EBF8] shadow-sm">
-            <MockQrSvg size={180} />
+        <div className="flex flex-col items-center px-5 pt-4 pb-3 gap-2">
+          <div className="p-2 rounded-2xl border-2 border-[#E5EBF8] shadow-sm">
+            <MockQrSvg size={130} />
           </div>
-          <p className="text-[#0D2B6E] font-bold text-[15px]">{businessName}</p>
-          <p className="text-gray-400 text-[12px]">{businessType}</p>
-          <div className="bg-[#EEF2FB] rounded-xl px-4 py-2 flex flex-col items-center gap-0.5">
-            <p className="text-[11px] text-gray-400">Merchant ID</p>
-            <p className="text-[13px] font-bold text-[#0D2B6E] font-mono">{mid}</p>
+          <p className="text-[#0D2B6E] font-bold text-[14px]">{businessName}</p>
+          <p className="text-gray-400 text-[11px]">{businessType}</p>
+          <div className="bg-[#EEF2FB] rounded-xl px-4 py-1.5 flex flex-col items-center gap-0.5">
+            <p className="text-[10px] text-gray-400">Merchant ID</p>
+            <p className="text-[12px] font-bold text-[#0D2B6E] font-mono">{mid}</p>
           </div>
-          <p className="text-[11px] text-gray-400 text-center leading-relaxed px-2">
+          <p className="text-[10px] text-gray-400 text-center leading-relaxed px-2">
             Display this QR at your stall or share it with customers to accept TNG payments.
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 px-6 pb-7">
+        <div className="flex gap-3 px-5 pb-5">
           <button
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border-2 border-[#1A5FD5] text-[#1A5FD5] font-semibold text-[14px] active:scale-95 transition-transform"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full border-2 border-[#1A5FD5] text-[#1A5FD5] font-semibold text-[13px] active:scale-95 transition-transform"
             onClick={() => {
               // Mock share
               if (navigator.share) {
@@ -147,7 +147,7 @@ function QrModal({
             Share
           </button>
           <button
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-semibold text-[14px] text-white active:scale-95 transition-transform shadow-md"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full font-semibold text-[13px] text-white active:scale-95 transition-transform shadow-md"
             style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}
             onClick={() => {
               // Mock download — creates a blob with the QR payload text
@@ -176,6 +176,7 @@ export default function BusinessPage() {
   const [qrGenerated, setQrGenerated] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showQr, setShowQr] = useState(false)
+  useLockScroll(showQr)
 
   useEffect(() => {
     setMounted(true)

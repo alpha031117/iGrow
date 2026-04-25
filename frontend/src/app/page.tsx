@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react'
 import { dummyTransactions, RawTransaction } from './data'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLockScroll } from '@/context/scroll-lock'
 
 type Transaction = {
   id: string | number
@@ -117,6 +118,7 @@ export default function HomePage() {
   const router = useRouter()
   const [showConsent, setShowConsent] = useState(false)
   const [isOnboarded, setIsOnboarded] = useState(false)
+  useLockScroll(showConsent)
 
   useEffect(() => {
     const onboarded = localStorage.getItem('igrow_onboarded') === 'true'

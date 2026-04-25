@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useLockScroll } from "@/context/scroll-lock"
 import {
   ArrowLeft, FileText, ChevronRight, Clock, Calendar,
   TrendingUp, TrendingDown, CheckCircle,
@@ -385,6 +386,7 @@ export default function DashboardPage() {
   const [dateTo, setDateTo] = useState("")
   const [sheetOpen, setSheetOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  useLockScroll(sheetOpen || showCustom)
 
   useEffect(() => {
     setMounted(true)
