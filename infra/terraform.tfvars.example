@@ -1,0 +1,26 @@
+# Copy this file to terraform.tfvars and fill in your values
+# Never commit terraform.tfvars to git
+
+project_name = "igrow"
+environment  = "prod"
+
+# ─── AWS ─────────────────────────────────────────────────────────────────────
+aws_region = "ap-southeast-1"
+
+# Model IDs — verify these are enabled in your Bedrock console before apply
+bedrock_llm_model_id        = "anthropic.claude-3-haiku-20240307-v1:0"
+bedrock_embedding_model_arn = "arn:aws:bedrock:ap-southeast-1::foundation-model/amazon.titan-embed-text-v2:0"
+
+# ─── Alibaba Cloud ───────────────────────────────────────────────────────────
+alicloud_region     = "ap-southeast-3"   # Kuala Lumpur
+alicloud_access_key = "YOUR_ALICLOUD_ACCESS_KEY"
+alicloud_secret_key = "YOUR_ALICLOUD_SECRET_KEY"
+
+# ECS — run: aliyun ecs DescribeInstanceTypes --region ap-southeast-3
+ecs_instance_type = "ecs.c6.large"
+ecs_image_id      = "ubuntu_22_04_x64_20G_alibase_20240116.vhd"
+
+# ─── Database ────────────────────────────────────────────────────────────────
+db_name     = "igrow"
+db_username = "igrow_admin"
+db_password = "YOUR_STRONG_DB_PASSWORD_HERE"   # min 8 chars, letters + numbers

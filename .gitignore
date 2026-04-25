@@ -30,3 +30,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+!**/terraform.tfvars.example
+**/.terraform.lock.hcl
+infra/.lambda_ai_gateway.zip
