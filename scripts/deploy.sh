@@ -67,6 +67,9 @@ cd "$APP_DIR"
 git fetch origin "$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
+log "Checking AWS Bedrock credentials"
+bash "$APP_DIR/scripts/check-bedrock.sh"
+
 log "Installing backend dependencies"
 cd "$BACKEND_DIR"
 if [ ! -d "venv" ]; then

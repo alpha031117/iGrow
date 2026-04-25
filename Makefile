@@ -1,5 +1,6 @@
 .PHONY: dev dev-down frontend backend install \
-        db-up db-down db-upgrade db-seed db-reset help
+        db-up db-down db-upgrade db-seed db-reset \
+        check-bedrock help
 
 FRONTEND_PORT := 3000
 BACKEND_PORT  := 8000
@@ -93,6 +94,9 @@ db-upgrade-remote:
 db-seed:
 	@echo "Seeding merchant transaction data..."
 	cd backend && python scripts/seed_merchant.py
+
+check-bedrock:
+	@bash scripts/check-bedrock.sh
 
 db-reset:
 	@echo "Resetting local MySQL volume..."
