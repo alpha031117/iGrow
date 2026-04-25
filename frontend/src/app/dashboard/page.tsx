@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, FileText, ChevronRight, Clock, Calendar,
   TrendingUp, TrendingDown, CheckCircle,
+  Banknote, Sparkles, ExternalLink, Loader2, X,
 } from "lucide-react"
 
 // ─── TNG Colour tokens ───────────────────────────────────────────────
@@ -32,6 +33,31 @@ const C = {
   g700: "#334155",
   g900: "#0f172a",
 }
+
+// ─── Simulation data ──────────────────────────────────────────────────
+const DASH_SIM_DAYS = [
+  { d: "Mon", v: 85 }, { d: "Tue", v: 95 }, { d: "Wed", v: 105 },
+  { d: "Thu", v: 110 }, { d: "Fri", v: 150 }, { d: "Sat", v: 175 }, { d: "Sun", v: 72 },
+  { d: "Mon", v: 102 }, { d: "Tue", v: 114 }, { d: "Wed", v: 126 },
+  { d: "Thu", v: 132 }, { d: "Fri", v: 180 }, { d: "Sat", v: 210 }, { d: "Sun", v: 84 },
+]
+const DASH_SIM_THRESHOLD = 14
+const DASH_SIM_INTERVAL_MS = 1200
+
+// ─── Partner data ─────────────────────────────────────────────────────
+const TRACK1_PARTNERS = [
+  { abbr: "MD", name: "MDEC", offer: "Digital grants up to RM 5,000" },
+  { abbr: "TK", name: "TEKUN Nasional", offer: "RM 1,000 – RM 50,000 micro-financing" },
+  { abbr: "SD", name: "SIDEC", offer: "Selangor digital economy grants" },
+  { abbr: "CF", name: "Cradle Fund", offer: "Pre-seed investment for innovators" },
+]
+
+const TRACK2_PARTNERS = [
+  { abbr: "SC", name: "SME Corp Malaysia", offer: "Advisory services + business grants" },
+  { abbr: "iT", name: "Bank Negara iTEKAD", offer: "B40 matched savings programme" },
+  { abbr: "13", name: "1337 Ventures", offer: "VC funding for early-stage startups" },
+  { abbr: "PN", name: "PERNAS", offer: "Procurement for Bumiputera enterprises" },
+]
 
 // ─── Mock data ────────────────────────────────────────────────────────
 type PeriodData = {
@@ -131,6 +157,15 @@ const DATA: Record<string, PeriodData> = {
 
 // ─── Sub-components ───────────────────────────────────────────────────
 
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wide shrink-0">{label}</span>
+      <span className="text-[12px] font-medium text-[#0D2B6E] text-right">{value}</span>
+    </div>
+  )
+}
+
 function SvgRing({ pct, size, strokeW, color }: { pct: number; size: number; strokeW: number; color: string }) {
   const r = (size - strokeW) / 2
   const circ = 2 * Math.PI * r
@@ -174,6 +209,144 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
   )
 }
 
+// ─── SSM Nudge Sheet ──────────────────────────────────────────────────
+
+function SsmNudgeSheet({ onDismiss, onChat }: { onDismiss: () => void; onChat: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onDismiss}
+    >
+      <div
+        className="w-full max-w-lg bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+          style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}>
+          <FileText className="w-6 h-6 text-white" />
+        </div>
+        <h2 className="text-[#0D2B6E] text-[18px] font-bold leading-snug mb-1">One step to unlock more</h2>
+        <p className="text-gray-500 text-[13px] leading-relaxed mb-4">
+          Your revenue pattern looks great. To qualify for financing and incubator programs, you&apos;ll need an SSM registration first.
+        </p>
+        <div className="bg-[#EEF2FB] rounded-2xl p-4 mb-4">
+          <p className="text-[#0D2B6E] text-[12px] font-bold mb-3">With SSM, you can access:</p>
+          <div className="flex flex-col gap-2.5">
+            {[
+              { icon: Banknote, label: "Starter Track Package B", sub: "RM 10,000 – RM 50,000 revenue-based financing" },
+              { icon: Sparkles, label: "Growth Track programs", sub: "MDEC grants, TEKUN financing, incubator matching" },
+            ].map(({ icon: Icon, label, sub }) => (
+              <div key={label} className="flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+                  <Icon className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-[#0D2B6E]">{label}</p>
+                  <p className="text-[11px] text-gray-400">{sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl mb-5" style={{ backgroundColor: "#FFFBEB", borderLeft: "3px solid #F59E0B" }}>
+          <span className="text-[12px] text-amber-700 leading-relaxed">
+            <span className="font-bold">SSM registration</span> costs from RM 30 for sole proprietors and can be done online at <span className="font-semibold">ssm.com.my</span>.
+          </span>
+        </div>
+        <button onClick={onChat}
+          className="w-full rounded-full py-4 font-bold text-[15px] text-white mb-3 active:scale-95 transition-transform duration-200 shadow-md flex items-center justify-center gap-2"
+          style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+          <ExternalLink className="w-4 h-4" /> Ask iGrow how to register SSM
+        </button>
+        <button onClick={onDismiss}
+          className="w-full rounded-full py-3.5 font-semibold text-[14px] border-2 border-[#E5EBF8] text-[#6B7280] hover:bg-[#F5F8FF] transition-colors">
+          I&apos;ll do it later
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Launchpad Nudge Sheet ────────────────────────────────────────────
+
+function LaunchpadNudgeSheet({
+  tier, pkg, onAccept, onDismiss,
+}: {
+  tier: "1" | "2"
+  pkg: "A" | "B" | "track1" | "track2"
+  onAccept: () => void
+  onDismiss: () => void
+}) {
+  const isTrack1 = pkg === "track1"
+  const partners = isTrack1 ? TRACK1_PARTNERS : TRACK2_PARTNERS
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onDismiss}>
+      <div className="w-full max-w-lg bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+          style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+          {tier === "1" ? <Banknote className="w-6 h-6 text-white" /> : <Sparkles className="w-6 h-6 text-white" />}
+        </div>
+        <h2 className="text-[#0D2B6E] text-[18px] font-bold leading-snug mb-1">You&apos;re ready for Launchpad</h2>
+        <p className="text-gray-500 text-[13px] leading-relaxed mb-4">
+          Based on your revenue pattern and business profile, you may be eligible for:
+        </p>
+        <div className="bg-[#EEF2FB] rounded-2xl p-4 mb-5">
+          {tier === "1" ? (
+            <>
+              <p className="text-[#1A5FD5] text-[11px] font-bold uppercase tracking-wide mb-0.5">Starter Track</p>
+              <p className="text-[#0D2B6E] text-[15px] font-bold mb-1">
+                {pkg === "A" ? "Package A — Solo Operator" : "Package B — Growing SME"}
+              </p>
+              <p className="text-gray-500 text-[12px] mb-3">
+                {pkg === "A" ? "For solo hustlers. Start small, grow steady." : "For businesses ready for their next chapter."}
+              </p>
+              <div className="flex flex-col gap-2">
+                <DetailRow label="Loan range" value={pkg === "A" ? "RM 1,000 – RM 5,000" : "RM 10,000 – RM 50,000"} />
+                <DetailRow label="Revenue deduction" value="6.02% of monthly TNG revenue" />
+                <DetailRow label="Repayment" value="No fixed monthly instalments" />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[#1A5FD5] text-[11px] font-bold uppercase tracking-wide mb-0.5">Growth Track</p>
+              <p className="text-[#0D2B6E] text-[15px] font-bold mb-1">
+                {isTrack1 ? "Digital Commerce" : "Public & Institutional Funding"}
+              </p>
+              <p className="text-gray-500 text-[12px] mb-3">Get matched with grants, programs, and investors.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {partners.slice(0, 3).map(p => (
+                  <span key={p.abbr} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white text-[#0D2B6E]">{p.name}</span>
+                ))}
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white text-[#6B7280]">+{partners.length - 3} more</span>
+              </div>
+              <p className="text-[11px] text-[#1A5FD5] font-medium mt-3">TNG pre-fills your application using your merchant data.</p>
+            </>
+          )}
+        </div>
+        <button onClick={onAccept}
+          className="w-full rounded-full py-4 font-bold text-[15px] text-white mb-3 active:scale-95 transition-transform duration-200 shadow-md"
+          style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+          Explore this for me →
+        </button>
+        <button onClick={onDismiss}
+          className="w-full rounded-full py-3.5 font-semibold text-[14px] border-2 border-[#E5EBF8] text-[#6B7280] hover:bg-[#F5F8FF] transition-colors">
+          Maybe later
+        </button>
+        <p className="text-center text-[11px] text-gray-400 mt-4 leading-relaxed">
+          This is not a loan approval. TNG Launchpad products are subject to eligibility review.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Report sheet ─────────────────────────────────────────────────────
 
 type SheetState = "idle" | "open"
@@ -197,7 +370,6 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
     const W = 210, M = 20, CW = W - 2 * M
     let y = 20
 
-    // Header
     doc.setFillColor(26, 95, 213); doc.rect(0, 0, W, 38, "F")
     doc.setFillColor(13, 43, 110); doc.rect(0, 30, W, 8, "F")
     doc.setTextColor(255, 255, 255); doc.setFontSize(22); doc.setFont("helvetica", "bold")
@@ -234,7 +406,6 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
     })
     y += 4
 
-    // Bar chart
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
     doc.text("Sales By Day", M, y); y += 10
     const maxD = Math.max(...d.days.map(x => x.v))
@@ -257,7 +428,6 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
     })
     y = barBaseY + 14
 
-    // Peak hours
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
     doc.text("Peak Hours", M, y); y += 8
     const timeColW = 22  // fixed width for time labels
@@ -309,13 +479,11 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
 
   return (
     <>
-      {/* Overlay */}
       <div
         className="fixed inset-0 z-40 transition-opacity duration-300"
         style={{ backgroundColor: "rgba(0,0,0,0.4)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }}
         onClick={onClose}
       />
-      {/* Sheet */}
       <div
         className="fixed bottom-0 left-1/2 w-full max-w-[430px] bg-white rounded-t-3xl px-6 pt-5 pb-9 z-50 transition-transform duration-300"
         style={{ transform: `translateX(-50%) translateY(${open ? "0" : "100%"})` }}
@@ -331,10 +499,7 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
               key={o.key}
               onClick={() => !busy && genPDF(o.key)}
               className="flex items-center gap-3.5 p-4 rounded-2xl mb-2.5 border-[1.5px] cursor-pointer transition-all duration-200 active:scale-[.98]"
-              style={{
-                borderColor: busy ? C.pri : C.g200,
-                backgroundColor: busy ? C.priBg : "white",
-              }}
+              style={{ borderColor: busy ? C.pri : C.g200, backgroundColor: busy ? C.priBg : "white" }}
             >
               <div className="w-11 h-11 rounded-xl flex items-center justify-center text-[18px] font-bold shrink-0"
                 style={{ backgroundColor: o.badgeBg, color: o.badgeColor }}>
@@ -352,16 +517,13 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
           )
         })}
 
-        <button
-          onClick={onClose}
+        <button onClick={onClose}
           className="w-full mt-2 py-3.5 rounded-2xl text-[14px] font-bold transition-colors"
-          style={{ backgroundColor: C.g100, color: C.g600 }}
-        >
+          style={{ backgroundColor: C.g100, color: C.g600 }}>
           Cancel
         </button>
       </div>
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl text-[13px] font-semibold text-white"
           style={{ backgroundColor: C.g900 }}>
@@ -386,14 +548,96 @@ export default function DashboardPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  // Simulation state
+  const [dashSimCount, setDashSimCount] = useState(0)
+  const [simRunning, setSimRunning] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [showLaunchpadNudge, setShowLaunchpadNudge] = useState(false)
+  const [showSsmNudge, setShowSsmNudge] = useState(false)
+  const [launchpadAccepted, setLaunchpadAccepted] = useState(false)
+  const [recommendedTier, setRecommendedTier] = useState<"1" | "2" | "">("")
+  const [recommendedPackage, setRecommendedPackage] = useState<"A" | "B" | "track1" | "track2" | "">("")
+
+  const dashSimCountRef = useRef(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     setMounted(true)
     const now = new Date().toISOString().slice(0, 10)
     setDateFrom(now); setDateTo(now)
+
+    const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+    setDashSimCount(savedCount)
+    dashSimCountRef.current = savedCount
+
+    const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
+    setLaunchpadAccepted(accepted)
+
+    const savedTier = localStorage.getItem("igrow_tier") as "1" | "2" | null
+    const savedPkg = localStorage.getItem("igrow_package") as "A" | "B" | "track1" | "track2" | null
+    if (savedTier) {
+      setRecommendedTier(savedTier)
+      setRecommendedPackage(savedPkg ?? "")
+    }
   }, [])
+
+  useEffect(() => {
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [])
+
+  function runOneDashSimTick() {
+    const next = dashSimCountRef.current + 1
+    dashSimCountRef.current = next
+    setDashSimCount(next)
+    localStorage.setItem("igrow_dash_sim_count", String(next))
+
+    if (next >= DASH_SIM_THRESHOLD) {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = null
+      setSimRunning(false)
+      setIsAnalyzing(true)
+      setTimeout(() => {
+        setIsAnalyzing(false)
+        const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+        if (!userHasSSM) {
+          setShowSsmNudge(true)
+          return
+        }
+        const cat = localStorage.getItem("igrow_category") ?? ""
+        const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
+        const tier: "1" | "2" = "2"
+        const pkg: "track1" | "track2" = isFood ? "track1" : "track2"
+        setRecommendedTier(tier)
+        setRecommendedPackage(pkg)
+        setShowLaunchpadNudge(true)
+      }, 2500)
+    }
+  }
+
+  function handleStartDashSimulate() {
+    if (simRunning || launchpadAccepted || dashSimCount >= DASH_SIM_THRESHOLD) return
+    setSimRunning(true)
+    intervalRef.current = setInterval(runOneDashSimTick, DASH_SIM_INTERVAL_MS)
+  }
+
+  function handleLaunchpadAccept() {
+    localStorage.setItem("igrow_tier", recommendedTier)
+    localStorage.setItem("igrow_package", recommendedPackage)
+    localStorage.setItem("igrow_launchpad_accepted", "true")
+    setLaunchpadAccepted(true)
+    setShowLaunchpadNudge(false)
+  }
 
   const activeKey = activeTab === "week" ? weekFilter : monthFilter
   const d = DATA[activeKey]
+
+  // Simulation continues from existing demo data — append new days and show last 7
+  const simRevealedDays = DASH_SIM_DAYS.slice(0, dashSimCount)
+  const allChartDays = [...d.days, ...simRevealedDays]
+  const simTotalSales = simRevealedDays.reduce((acc, day) => acc + day.v, 0)
+  const displaySales = d.heroSales + simTotalSales
+  const displayTxn = d.heroTxn + dashSimCount * 14
+  const displayAvg = displayTxn > 0 ? displaySales / displayTxn : d.heroAvg
 
   function applyCustom() {
     if (!dateFrom || !dateTo) return
@@ -410,7 +654,9 @@ export default function DashboardPage() {
 
   if (!mounted) return null
 
-  const maxDay = Math.max(...d.days.map(x => x.v))
+  const hasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+  const chartDays = allChartDays.slice(-7)
+  const maxDay = Math.max(...chartDays.map(x => x.v), 1)
   const weeks = d.weeks.filter(w => w.v !== null)
   const maxWeek = weeks.length ? Math.max(...weeks.map(x => x.v)) : 1
   const dateStr = new Date().toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
@@ -421,6 +667,8 @@ export default function DashboardPage() {
   const activeFilter = activeTab === "week" ? weekFilter : monthFilter
   const setFilter = activeTab === "week" ? setWeekFilter : setMonthFilter
   const customKey = activeTab === "week" ? "customWeek" : "customMonth"
+  const isTrack1 = recommendedPackage === "track1"
+  const partners = isTrack1 ? TRACK1_PARTNERS : TRACK2_PARTNERS
 
   return (
     <div className="min-h-screen pb-8" style={{ backgroundColor: C.g50, fontFamily: "Inter, sans-serif", maxWidth: 430, margin: "0 auto" }}>
@@ -517,11 +765,9 @@ export default function DashboardPage() {
               />
             </div>
           </div>
-          <button
-            onClick={applyCustom}
+          <button onClick={applyCustom}
             className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-colors"
-            style={{ background: `linear-gradient(135deg,${C.pri},${C.priDark})` }}
-          >
+            style={{ background: `linear-gradient(135deg,${C.pri},${C.priDark})` }}>
             Apply Range
           </button>
         </div>
@@ -529,14 +775,99 @@ export default function DashboardPage() {
 
       <div className="h-4" />
 
+      {/* ── Launchpad Package card (post-acceptance) ── */}
+      {launchpadAccepted && recommendedTier !== "" && (
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+                {recommendedTier === "1" ? <Banknote className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-white" />}
+              </div>
+              <div>
+                <p className="text-[#0D2B6E] text-[14px] font-bold">
+                  {recommendedTier === "1" ? "Starter Track" : "Growth Track"}
+                </p>
+                <p className="text-[#1A5FD5] text-[12px] font-semibold">
+                  {recommendedPackage === "A" && "Package A — Solo Operator"}
+                  {recommendedPackage === "B" && "Package B — Growing SME"}
+                  {recommendedPackage === "track1" && "Digital Commerce"}
+                  {recommendedPackage === "track2" && "Public & Institutional Funding"}
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "#DCFCE7", color: "#166534" }}>
+              Active
+            </span>
+          </div>
+
+          {recommendedTier === "1" ? (
+            <>
+              <p className="text-[13px] text-gray-500 mb-3 leading-relaxed">
+                {recommendedPackage === "A" ? "For solo hustlers. Start small, grow steady." : "For businesses ready for their next chapter."}
+              </p>
+              <div className="bg-[#EEF2FB] rounded-2xl p-3 flex flex-col gap-2 mb-3">
+                <DetailRow label="Loan range" value={recommendedPackage === "A" ? "RM 1,000 – RM 5,000" : "RM 10,000 – RM 50,000"} />
+                <DetailRow label="Revenue deduction" value="6.02% of monthly TNG revenue" />
+                <DetailRow label="Repayment" value="No fixed monthly instalments" />
+                <DetailRow label="Review trigger" value="3+ months below floor — we'll help you restructure" />
+              </div>
+              <button className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-[#E5EBF8] hover:border-[#1A5FD5] transition-colors">
+                <span className="text-[#0D2B6E] text-[13px] font-semibold">Learn about BizCash Readiness</span>
+                <ChevronRight className="w-4 h-4 text-[#1A5FD5]" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2.5 mb-3">
+                {partners.map(p => (
+                  <div key={p.abbr} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#EEF2FB] flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-[#1A5FD5]">{p.abbr}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-[#0D2B6E] truncate">{p.name}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{p.offer}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3" style={{ backgroundColor: "#F0F5FF" }}>
+                <span className="text-[11px] text-[#1A5FD5] font-medium leading-snug">
+                  TNG pre-fills your application form using your merchant data.
+                </span>
+              </div>
+              <button
+                onClick={() => router.push('/chat?prompt=' + encodeURIComponent(
+                  isTrack1
+                    ? "What incubator and grant programs are available for digital commerce food businesses in Malaysia? I'm a TNG merchant looking to grow."
+                    : "What public funding and institutional programs are available for service-based micro businesses in Malaysia? I'm a TNG merchant."
+                ))}
+                className="w-full rounded-full py-3.5 font-bold text-[14px] text-white flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
+                style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}
+              >
+                View Matched Programs →
+              </button>
+            </>
+          )}
+        </Card>
+      )}
+
       {/* ── Hero metrics ── */}
       <div className="grid grid-cols-2 gap-3 px-5 mb-4">
-        {/* Sales card */}
         <div className="bg-white rounded-[20px] p-5 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-14 h-14 rounded-bl-[60px]" style={{ background: `linear-gradient(135deg,rgba(26,95,213,.08),transparent)` }} />
-          <p className="text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: C.g400 }}>{d.heroLabel}</p>
-          <p className="text-[26px] font-extrabold my-1.5 tracking-tight" style={{ color: C.g900 }}>RM {d.heroSales.toLocaleString()}</p>
-          {d.vsPrevLabel ? (
+          <p className="text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: C.g400 }}>
+            {dashSimCount > 0 ? `${dashSimCount}-Day Revenue` : d.heroLabel}
+          </p>
+          <p className="text-[26px] font-extrabold my-1.5 tracking-tight" style={{ color: C.g900 }}>
+            RM {displaySales.toLocaleString()}
+          </p>
+          {dashSimCount > 0 ? (
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded-lg" style={{ color: C.grn, backgroundColor: C.grnBg }}>
+              <TrendingUp className="w-3 h-3" /> Growing
+            </span>
+          ) : d.vsPrevLabel ? (
             <span className="inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded-lg"
               style={{ color: d.vsPrev >= 0 ? C.grn : C.red, backgroundColor: d.vsPrev >= 0 ? C.grnBg : C.redBg }}>
               {d.vsPrev >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -544,13 +875,12 @@ export default function DashboardPage() {
             </span>
           ) : null}
         </div>
-        {/* Txn card */}
         <div className="bg-white rounded-[20px] p-5 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-14 h-14 rounded-bl-[60px]" style={{ background: `linear-gradient(135deg,rgba(16,185,129,.08),transparent)` }} />
           <p className="text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: C.g400 }}>Transactions</p>
-          <p className="text-[26px] font-extrabold my-1.5 tracking-tight" style={{ color: C.g900 }}>{d.heroTxn}</p>
+          <p className="text-[26px] font-extrabold my-1.5 tracking-tight" style={{ color: C.g900 }}>{displayTxn}</p>
           <span className="inline-flex items-center text-[12px] font-semibold px-2 py-0.5 rounded-lg" style={{ color: C.g500, backgroundColor: C.g100 }}>
-            avg RM {d.heroAvg.toFixed(2)}
+            avg RM {displayAvg.toFixed(2)}
           </span>
         </div>
       </div>
@@ -581,23 +911,60 @@ export default function DashboardPage() {
       </Card>
 
       {/* ── Bar chart ── */}
-      <SectionLabel>Sales By Day</SectionLabel>
+      <div className="px-6 pb-2.5 pt-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: C.g400 }}>Sales By Day</p>
+            {!launchpadAccepted && (
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: hasSSM ? "#DCFCE7" : "#FEF3C7",
+                  color: hasSSM ? "#166534" : "#92400E",
+                }}
+              >
+                {hasSSM ? "SSM ✓" : "No SSM"}
+              </span>
+            )}
+          </div>
+          {!launchpadAccepted && (
+            <button
+              onClick={handleStartDashSimulate}
+              disabled={simRunning || isAnalyzing || dashSimCount >= DASH_SIM_THRESHOLD}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border-2 transition-all active:scale-95 disabled:opacity-60"
+              style={{ borderColor: "#10B981", color: simRunning || isAnalyzing ? "#10B981" : (dashSimCount >= DASH_SIM_THRESHOLD ? C.g400 : "#10B981"), backgroundColor: simRunning ? "rgba(16,185,129,0.08)" : "transparent" }}
+            >
+              {isAnalyzing ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Analyzing…</>
+              ) : simRunning ? (
+                <><span className="animate-pulse">●</span> Simulating…</>
+              ) : dashSimCount >= DASH_SIM_THRESHOLD ? (
+                "Done ✓"
+              ) : (
+                `▶ Simulate`
+              )}
+            </button>
+          )}
+        </div>
+      </div>
       <Card>
         <div className="flex items-end gap-1.5 h-28 pt-3">
-          {d.days.map((x, i) => {
-            const ht = Math.max((x.v / maxDay) * 90, 4)
-            const best = x.v === maxDay
+          {chartDays.map((x, i) => {
+            const ht = Math.max((x.v / maxDay) * 90, x.v > 0 ? 4 : 2)
+            const best = x.v === maxDay && x.v > 0
+            const isEmpty = x.v === 0
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
-                <div className="relative w-full rounded-lg" style={{
+                <div className="relative w-full rounded-lg transition-all duration-500" style={{
                   height: ht,
-                  background: best ? `linear-gradient(180deg,${C.pri},${C.priDark})` : C.g200,
-                  transition: "height .5s cubic-bezier(.4,0,.2,1)"
+                  background: isEmpty ? C.g100 : (best ? `linear-gradient(180deg,${C.pri},${C.priDark})` : C.g200),
                 }}>
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: best ? C.pri : C.g700 }}>
-                    RM {x.v}
-                  </span>
+                  {!isEmpty && (
+                    <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: best ? C.pri : C.g700 }}>
+                      RM {x.v}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[11px] font-semibold" style={{ color: best ? C.pri : C.g400 }}>{x.d}</span>
               </div>
@@ -724,6 +1091,27 @@ export default function DashboardPage() {
 
       {/* Report sheet */}
       <ReportSheet open={sheetOpen} onClose={() => setSheetOpen(false)} activeData={d} />
+
+      {/* Launchpad Nudge */}
+      {showLaunchpadNudge && recommendedTier !== "" && recommendedPackage !== "" && (
+        <LaunchpadNudgeSheet
+          tier={recommendedTier as "1" | "2"}
+          pkg={recommendedPackage as "A" | "B" | "track1" | "track2"}
+          onAccept={handleLaunchpadAccept}
+          onDismiss={() => setShowLaunchpadNudge(false)}
+        />
+      )}
+
+      {/* SSM Nudge */}
+      {showSsmNudge && (
+        <SsmNudgeSheet
+          onDismiss={() => setShowSsmNudge(false)}
+          onChat={() => {
+            setShowSsmNudge(false)
+            router.push('/chat?prompt=' + encodeURIComponent("How do I register my business with SSM in Malaysia? I'm a small business owner using TNG and want to access financing packages."))
+          }}
+        />
+      )}
     </div>
   )
 }

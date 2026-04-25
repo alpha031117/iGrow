@@ -7,6 +7,17 @@ export type RawTransaction = {
   direction: 'credit' | 'debit'
 }
 
+export const simulationTransactions: RawTransaction[] = [
+  { id: "s-001", account_id: "a-001", category_id: "c-001", title: "Nasi Lemak Order", amount: 7, direction: "credit" },
+  { id: "s-002", account_id: "a-001", category_id: "c-001", title: "Kuih Set Order", amount: 12, direction: "credit" },
+  { id: "s-003", account_id: "a-001", category_id: "c-001", title: "Lunch Order", amount: 9, direction: "credit" },
+  { id: "s-004", account_id: "a-001", category_id: "c-001", title: "Dinner Order", amount: 15, direction: "credit" },
+  { id: "s-005", account_id: "a-001", category_id: "c-001", title: "Weekend Order", amount: 18, direction: "credit" },
+  { id: "s-006", account_id: "a-001", category_id: "c-001", title: "Kuih Raya Order", amount: 8, direction: "credit" },
+  { id: "s-007", account_id: "a-001", category_id: "c-001", title: "Breakfast Order", amount: 6, direction: "credit" },
+  { id: "s-008", account_id: "a-001", category_id: "c-001", title: "Catering Order", amount: 45, direction: "credit" },
+]
+
 export const dummyTransactions: RawTransaction[] = [
   {
     "id": "t-001",

@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { TrendingUp, PiggyBank, Calculator, BarChart2, Sparkles, FileText } from "lucide-react";
 import { PromptBox, type FileAttachment } from "@/components/ui/chatgpt-prompt-input";
 import type { Message, ImageContent, TextContent } from "@mariozechner/pi-ai";
 
 const SYSTEM_PROMPT =
-  "You are iGrow, a friendly and knowledgeable financial assistant. You help users understand personal finance, budgeting, investing, and growing their wealth. Keep answers clear, practical, and encouraging. When the user shares a file or document, analyze it carefully and provide specific insights.";
+  "You are iGrow, an AI-powered financial growth assistant for TNG (Touch 'n Go) merchants and micro-SME users in Malaysia. You help users understand TNG Business Account features, Merchant QR setup, BizCash financing readiness, and incubator/grant programs like MDEC, TEKUN, SIDEC, Cradle Fund, SME Corp, Bank Negara iTEKAD, 1337 Ventures, and PERNAS. You guide informal traders, home-based sellers, freelancers, and micro-businesses toward becoming finance-ready merchants. Keep answers clear, practical, and encouraging. Always remind users that this is not financial advice and that TNG products are subject to eligibility review. When the user shares a file or document, analyze it carefully and provide specific insights.";
 
 const MODEL_OPTIONS = [
   { id: "haiku", label: "Haiku 4.5", sublabel: "Fast" },
@@ -91,13 +92,19 @@ async function processAttachment(attachment: FileAttachment): Promise<{
   };
 }
 
-export default function ChatPage() {
+function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [modelId, setModelId] = useState<ModelId>("haiku");
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const prompt = searchParams.get("prompt");
+    if (prompt) setInput(prompt);
+  }, [searchParams]);
 
   async function send(text?: string) {
     const rawText = (text ?? input).trim();
@@ -319,5 +326,13 @@ export default function ChatPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ChatPageWrapper() {
+  return (
+    <Suspense>
+      <ChatPage />
+    </Suspense>
   );
 }

@@ -1,9 +1,9 @@
 "use client"
 
-import { ArrowDownLeft, ArrowUpRight, Car, Dumbbell, TrendingUp, BarChart3, ChevronRight } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Car, Dumbbell, TrendingUp, BarChart3, ChevronRight, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { dummyTransactions, RawTransaction } from './data'
-import { useState, useEffect } from 'react'
+import { dummyTransactions, simulationTransactions, RawTransaction } from './data'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Transaction = {
@@ -25,7 +25,7 @@ function getIconForCategory(categoryId: string, credit: boolean) {
   }
 }
 
-const allMappedTransactions: Transaction[] = dummyTransactions.map((tx: RawTransaction) => {
+function mapTransaction(tx: RawTransaction): Transaction {
   const credit = tx.direction === 'credit'
   const { Icon, iconBg } = getIconForCategory(tx.category_id, credit)
   return {
@@ -37,14 +37,18 @@ const allMappedTransactions: Transaction[] = dummyTransactions.map((tx: RawTrans
     iconBg,
     Icon,
   }
-})
+}
 
-const todayTransactions = allMappedTransactions.slice(0, 4)
+const allMappedTransactions: Transaction[] = dummyTransactions.map(mapTransaction)
+const initialTodayTransactions = allMappedTransactions.slice(0, 4)
 const yesterdayTransactions = allMappedTransactions.slice(4)
 
-function TransactionCard({ tx }: { tx: Transaction }) {
+const SIM_THRESHOLD = 5
+const SIM_INTERVAL_MS = 1200
+
+function TransactionCard({ tx, isNew }: { tx: Transaction; isNew?: boolean }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 w-full shadow-sm">
+    <div className={`flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 w-full shadow-sm${isNew ? ' animate-in fade-in slide-in-from-top-2 duration-300' : ''}`}>
       <div
         className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
         style={{ backgroundColor: tx.iconBg }}
@@ -65,7 +69,12 @@ function TransactionCard({ tx }: { tx: Transaction }) {
   )
 }
 
-function ConsentSheet({ onClose, onAccept }: { onClose: () => void; onAccept: () => void }) {
+function ConsentSheet({ onClose, onAccept, simCount, simTotal }: {
+  onClose: () => void
+  onAccept: () => void
+  simCount: number
+  simTotal: number
+}) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
@@ -87,14 +96,36 @@ function ConsentSheet({ onClose, onAccept }: { onClose: () => void; onAccept: ()
           We noticed business activity
         </h2>
         <p className="text-gray-500 text-[14px] leading-relaxed mb-1">
-          We noticed regular incoming payments that look like business activity on your account.
+          We detected <span className="font-semibold text-[#0D2B6E]">{simCount} incoming payments</span> totalling{' '}
+          <span className="font-semibold text-[#0D2B6E]">RM {simTotal.toFixed(2)}</span> that look like business activity.
         </p>
-        <p className="text-gray-500 text-[14px] leading-relaxed mb-6">
+        <p className="text-gray-500 text-[14px] leading-relaxed mb-4">
           Open a <span className="font-semibold text-[#0D2B6E]">TNG Business Account</span> to separate your business income, accept QR payments, and track your sales.
         </p>
-        <p className="text-[11px] text-gray-400 mb-5 leading-relaxed">
-          Based on similar merchant journeys, tools such as QR payments, sales tracking, and campaigns may help you manage and grow your business better. This is not financial advice.
-        </p>
+
+        {/* Social proof stats */}
+        <div className="bg-[#EEF2FB] rounded-2xl p-4 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-[#1A5FD5] shrink-0" />
+            <span className="text-[#0D2B6E] text-[12px] font-bold uppercase tracking-wide">What merchants say</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { stat: '73%', desc: 'cleaner income separation' },
+              { stat: '2.4×', desc: 'more likely BizCash-ready' },
+              { stat: '68%', desc: 'more repeat customers' },
+            ].map(({ stat, desc }) => (
+              <div key={stat} className="bg-white rounded-xl px-2 py-3 flex flex-col items-center gap-1 text-center">
+                <span className="text-[#1A5FD5] text-[22px] font-extrabold leading-none">{stat}</span>
+                <span className="text-[11px] text-gray-500 leading-snug">{desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-400 leading-relaxed mt-2.5">
+            Based on similar TNG merchant journeys. This is not financial advice.
+          </p>
+        </div>
+
         <button
           onClick={onAccept}
           className="w-full rounded-full py-4 font-bold text-[15px] text-white mb-3 active:scale-95 transition-transform duration-200 shadow-md"
@@ -118,13 +149,74 @@ export default function HomePage() {
   const [showConsent, setShowConsent] = useState(false)
   const [isOnboarded, setIsOnboarded] = useState(false)
 
+  const [balance, setBalance] = useState(103164.10)
+  const [simCount, setSimCount] = useState(0)
+  const [simTotal, setSimTotal] = useState(0)
+  const [simRunning, setSimRunning] = useState(false)
+  const [todayTxns, setTodayTxns] = useState<Transaction[]>(initialTodayTransactions)
+  const [newTxnIds, setNewTxnIds] = useState<Set<string>>(new Set())
+  const [detectionBannerVisible, setDetectionBannerVisible] = useState(false)
+
+  // Use refs so the interval callback always reads fresh values
+  const simCountRef = useRef(0)
+  const simTotalRef = useRef(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     const onboarded = localStorage.getItem('igrow_onboarded') === 'true'
     setIsOnboarded(onboarded)
-    // Reset other demo state but preserve onboarded status across navigation
-    const keys = ['igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
-    keys.forEach(k => localStorage.removeItem(k))
+    if (!onboarded) {
+      const keys = ['igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
+      keys.forEach(k => localStorage.removeItem(k))
+    }
   }, [])
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [])
+
+  function addOneSimTransaction() {
+    const idx = simCountRef.current % simulationTransactions.length
+    const txRaw = simulationTransactions[idx]
+    const newTx: Transaction = {
+      id: txRaw.id + '-' + Date.now(),
+      name: txRaw.title,
+      time: new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+      amount: `+RM ${txRaw.amount.toFixed(2)}`,
+      credit: true,
+      ...getIconForCategory(txRaw.category_id, true),
+    }
+
+    setTodayTxns(prev => [newTx, ...prev])
+    setNewTxnIds(prev => new Set([...prev, newTx.id as string]))
+    setTimeout(() => {
+      setNewTxnIds(prev => { const s = new Set(prev); s.delete(newTx.id as string); return s })
+    }, 600)
+
+    const nextCount = simCountRef.current + 1
+    const nextTotal = simTotalRef.current + txRaw.amount
+    simCountRef.current = nextCount
+    simTotalRef.current = nextTotal
+    setSimCount(nextCount)
+    setSimTotal(nextTotal)
+    setBalance(prev => prev + txRaw.amount)
+
+    if (nextCount >= SIM_THRESHOLD) {
+      // Stop the interval
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = null
+      setSimRunning(false)
+      setDetectionBannerVisible(true)
+      setTimeout(() => setShowConsent(true), 1000)
+    }
+  }
+
+  function handleStartSimulate() {
+    if (isOnboarded || simRunning || simCount >= SIM_THRESHOLD) return
+    setSimRunning(true)
+    intervalRef.current = setInterval(addOneSimTransaction, SIM_INTERVAL_MS)
+  }
 
   function handleLaunchpadClick() {
     if (isOnboarded) {
@@ -152,7 +244,7 @@ export default function HomePage() {
             Total Balance
           </span>
           <span className="text-white text-[36px] font-bold leading-tight tracking-tight">
-            RM 103,164.10
+            RM {balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span className="text-blue-300 text-[13px] font-medium mt-0.5">
             Brisval
@@ -162,6 +254,16 @@ export default function HomePage() {
               </span>
             )}
           </span>
+
+          {detectionBannerVisible && !isOnboarded && (
+            <div
+              className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold"
+              style={{ backgroundColor: 'rgba(16,185,129,0.2)', color: '#6EE7B7' }}
+            >
+              <span className="animate-pulse">●</span>
+              {simCount} business payments detected · RM {simTotal.toFixed(2)} received
+            </div>
+          )}
 
           <div className="flex items-center gap-3 mt-5">
             <button
@@ -181,7 +283,6 @@ export default function HomePage() {
       {/* Transaction history */}
       <div className="w-full max-w-lg mx-auto px-4 -mt-5 flex flex-col flex-1 pb-8 gap-5">
 
-        {/* Business Dashboard entry card — only shown when onboarded */}
         {isOnboarded && (
           <button
             onClick={() => router.push('/dashboard')}
@@ -197,7 +298,6 @@ export default function HomePage() {
               </div>
               <ChevronRight className="w-5 h-5 shrink-0 text-[#94a3b8]" />
             </div>
-            {/* Mini stats strip */}
             <div className="flex border-t border-[#EEF2FB]">
               {[
                 { label: 'This Week', value: 'RM 1,440' },
@@ -212,20 +312,35 @@ export default function HomePage() {
             </div>
           </button>
         )}
+
         <div className="bg-white rounded-3xl shadow-md overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#EEF2FB]">
             <span className="text-[#0D2B6E] text-[15px] font-bold">Transaction History</span>
-            <span className="text-[#6B7280] text-[12px] font-medium bg-[#EEF2FB] px-2.5 py-0.5 rounded-full">
-              {allMappedTransactions.length} items
-            </span>
+            <div className="flex items-center gap-2">
+              {!isOnboarded && (
+                <button
+                  onClick={handleStartSimulate}
+                  disabled={simRunning || simCount >= SIM_THRESHOLD}
+                  className="rounded-full px-3 py-1 text-[12px] font-bold text-white bg-[#10B981] active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  {simRunning ? (
+                    <><span className="animate-pulse">●</span> Simulating…</>
+                  ) : simCount >= SIM_THRESHOLD ? (
+                    'Done ✓'
+                  ) : (
+                    '▶ Simulate'
+                  )}
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex flex-col px-4 py-3 gap-2">
             <div className="flex items-center justify-between px-1 py-1">
               <span className="text-[#1A5FD5] text-[13px] font-bold uppercase tracking-wide">Today</span>
-              <span className="text-[#6B7280] text-[12px]">{todayTransactions.length} transactions</span>
+              <span className="text-[#6B7280] text-[12px]">{todayTxns.length} transactions</span>
             </div>
-            {todayTransactions.map((tx) => (
-              <TransactionCard key={tx.id} tx={tx} />
+            {todayTxns.map((tx) => (
+              <TransactionCard key={tx.id} tx={tx} isNew={newTxnIds.has(tx.id as string)} />
             ))}
             <div className="flex items-center justify-between px-1 py-1 mt-2">
               <span className="text-[#1A5FD5] text-[13px] font-bold uppercase tracking-wide">Yesterday</span>
@@ -242,13 +357,18 @@ export default function HomePage() {
         <ConsentSheet
           onClose={() => setShowConsent(false)}
           onAccept={handleAccept}
+          simCount={simCount}
+          simTotal={simTotal}
         />
       )}
 
       {/* Hidden demo reset — bottom-right corner */}
       <button
         onClick={() => {
-          ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated'].forEach(k => localStorage.removeItem(k))
+          [
+            'igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated',
+            'igrow_tier', 'igrow_package', 'igrow_dash_sim_count', 'igrow_launchpad_accepted',
+          ].forEach(k => localStorage.removeItem(k))
           window.location.reload()
         }}
         className="fixed bottom-4 right-4 w-4 h-4 rounded-full opacity-5 hover:opacity-25 transition-opacity"
