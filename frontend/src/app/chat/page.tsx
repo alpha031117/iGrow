@@ -186,22 +186,6 @@ function ChatPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-sm">AG</div>
           <span className="font-semibold text-zinc-900 dark:text-zinc-50 text-sm">AlphaGo</span>
         </div>
-        <div className="flex gap-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 p-1">
-          {MODEL_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => setModelId(opt.id)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                modelId === opt.id
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-              }`}
-            >
-              {opt.label}
-              <span className={`text-[10px] ${modelId === opt.id ? "text-emerald-500" : "text-zinc-400"}`}>{opt.sublabel}</span>
-            </button>
-          ))}
-        </div>
       </header>
 
       <div className="flex flex-col flex-1 overflow-hidden">

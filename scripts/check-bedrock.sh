@@ -26,7 +26,7 @@ MODEL="anthropic.claude-haiku-4-5-20251001-v1:0"
 echo "──────────────────────────────────────────"
 echo " iGrow Bedrock health check"
 echo " Region : $REGION"
-echo " Model  : $MODEL"
+echo " Model  : global.$MODEL (cross-region inference profile)"
 echo " Key    : ${AWS_ACCESS_KEY_ID:0:8}…"
 if [[ -n "${AWS_SESSION_TOKEN:-}" ]]; then
   echo " Session: ${AWS_SESSION_TOKEN:0:12}… (STS temp creds)"
@@ -48,7 +48,7 @@ key_id     = os.environ["AWS_ACCESS_KEY_ID"]
 secret     = os.environ["AWS_SECRET_ACCESS_KEY"]
 token      = os.environ.get("AWS_SESSION_TOKEN", "")
 region     = os.environ.get("AWS_REGION", "ap-southeast-1")
-model      = "anthropic.claude-haiku-4-5-20251001-v1:0"
+model      = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 host       = f"bedrock-runtime.{region}.amazonaws.com"
 # Use plain colon in URL — `:` is valid in URI path segments
 # Encode only in canonical_uri below (SigV4 requires it there)
