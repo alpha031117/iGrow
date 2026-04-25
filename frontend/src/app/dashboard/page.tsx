@@ -672,12 +672,13 @@ export default function DashboardPage() {
       }
     }, [])
 
-   function runOneDashSimTick() {
-     const next = dashSimCountRef.current + 1
-     dashSimCountRef.current = next
-     setDashSimCount(next)
-     setActiveSimBarIdx(6)  // newest day is always rightmost bar
-     localStorage.setItem("igrow_dash_sim_count", String(next))
+    function runOneDashSimTick() {
+      const next = dashSimCountRef.current + 1
+      dashSimCountRef.current = next
+      setDashSimCount(next)
+      setActiveSimBarIdx(6)  // newest day is always rightmost bar
+      localStorage.setItem("igrow_dash_sim_count", String(next))
+      console.log("[Dashboard] Simulation tick:", next, "- saved to localStorage")
 
      if (next >= DASH_SIM_THRESHOLD) {
        if (intervalRef.current) clearInterval(intervalRef.current)
@@ -721,25 +722,28 @@ export default function DashboardPage() {
     setShowLaunchpadNudge(false)
   }
 
-  const activeKey = activeTab === "week" ? weekFilter : monthFilter
-  const d = DATA[activeKey]
+   const activeKey = activeTab === "week" ? weekFilter : monthFilter
+   const d = DATA[activeKey]
 
-  // Simulation continues from existing demo data — append new days and show last 7
-  const simRevealedDays = DASH_SIM_DATA.slice(0, dashSimCount)
-  const allChartDays = [...d.days, ...simRevealedDays]
-  const simTotalSales = simRevealedDays.reduce((acc, day) => acc + day.v, 0)
-  const simTotalTxn = simRevealedDays.reduce((acc, day) => acc + day.txn, 0)
-  const displaySales = d.heroSales + simTotalSales
-  const displayTxn = d.heroTxn + simTotalTxn
-  const displayAvg = displayTxn > 0 ? displaySales / displayTxn : d.heroAvg
+   // Always read fresh count from localStorage to ensure we have latest value
+   const currentDashSimCount = typeof window !== 'undefined' ? parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0") : dashSimCount
 
-  // Derive which sim day the active bar corresponds to
-  const activeSimDayData: SimDay | null = (() => {
-    if (activeSimBarIdx === null || dashSimCount === 0) return null
-    const allIdx = dashSimCount + activeSimBarIdx  // position in allChartDays
-    const simIdx = allIdx - 7  // subtract the 7 base days
-    return simIdx >= 0 && simIdx < simRevealedDays.length ? DASH_SIM_DATA[simIdx] : null
-  })()
+   // Simulation continues from existing demo data — append new days and show last 7
+   const simRevealedDays = DASH_SIM_DATA.slice(0, currentDashSimCount)
+   const allChartDays = [...d.days, ...simRevealedDays]
+   const simTotalSales = simRevealedDays.reduce((acc, day) => acc + day.v, 0)
+   const simTotalTxn = simRevealedDays.reduce((acc, day) => acc + day.txn, 0)
+   const displaySales = d.heroSales + simTotalSales
+   const displayTxn = d.heroTxn + simTotalTxn
+   const displayAvg = displayTxn > 0 ? displaySales / displayTxn : d.heroAvg
+
+   // Derive which sim day the active bar corresponds to
+   const activeSimDayData: SimDay | null = (() => {
+     if (activeSimBarIdx === null || currentDashSimCount === 0) return null
+     const allIdx = currentDashSimCount + activeSimBarIdx  // position in allChartDays
+     const simIdx = allIdx - 7  // subtract the 7 base days
+     return simIdx >= 0 && simIdx < simRevealedDays.length ? DASH_SIM_DATA[simIdx] : null
+   })()
   const activeHours = activeSimDayData ? activeSimDayData.hours : d.hours
   const activePeakHour = activeSimDayData ? activeSimDayData.peakHour : d.peakHour
   const activePeakShare = activeSimDayData ? activeSimDayData.peakShare : d.peakShare
@@ -964,12 +968,12 @@ export default function DashboardPage() {
         <div className="bg-white rounded-[20px] p-5 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-14 h-14 rounded-bl-[60px]" style={{ background: `linear-gradient(135deg,rgba(26,95,213,.08),transparent)` }} />
           <p className="text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: C.g400 }}>
-            {dashSimCount > 0 ? `${dashSimCount}-Day Revenue` : d.heroLabel}
+            {currentDashSimCount > 0 ? `${currentDashSimCount}-Day Revenue` : d.heroLabel}
           </p>
           <p className="text-[26px] font-extrabold my-1.5 tracking-tight" style={{ color: C.g900 }}>
             RM {displaySales.toLocaleString()}
           </p>
-          {dashSimCount > 0 ? (
+          {currentDashSimCount > 0 ? (
             <span className="inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded-lg" style={{ color: C.grn, backgroundColor: C.grnBg }}>
               <TrendingUp className="w-3 h-3" /> Growing
             </span>
@@ -1034,32 +1038,32 @@ export default function DashboardPage() {
             )}
           </div>
           {!launchpadAccepted && (
-            <button
-              onClick={handleStartDashSimulate}
-              disabled={simRunning || isAnalyzing || dashSimCount >= DASH_SIM_THRESHOLD}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border-2 transition-all active:scale-95 disabled:opacity-60"
-              style={{ borderColor: "#10B981", color: simRunning || isAnalyzing ? "#10B981" : (dashSimCount >= DASH_SIM_THRESHOLD ? C.g400 : "#10B981"), backgroundColor: simRunning ? "rgba(16,185,129,0.08)" : "transparent" }}
-            >
-              {isAnalyzing ? (
-                <><Loader2 className="w-3 h-3 animate-spin" /> Analyzing…</>
-              ) : simRunning ? (
-                <><span className="animate-pulse">●</span> Simulating…</>
-              ) : dashSimCount >= DASH_SIM_THRESHOLD ? (
-                "Done ✓"
-              ) : (
-                `▶ Simulate`
-              )}
-            </button>
+             <button
+               onClick={handleStartDashSimulate}
+               disabled={simRunning || isAnalyzing || currentDashSimCount >= DASH_SIM_THRESHOLD}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border-2 transition-all active:scale-95 disabled:opacity-60"
+               style={{ borderColor: "#10B981", color: simRunning || isAnalyzing ? "#10B981" : (currentDashSimCount >= DASH_SIM_THRESHOLD ? C.g400 : "#10B981"), backgroundColor: simRunning ? "rgba(16,185,129,0.08)" : "transparent" }}
+             >
+               {isAnalyzing ? (
+                 <><Loader2 className="w-3 h-3 animate-spin" /> Analyzing…</>
+               ) : simRunning ? (
+                 <><span className="animate-pulse">●</span> Simulating…</>
+               ) : currentDashSimCount >= DASH_SIM_THRESHOLD ? (
+                 "Done ✓"
+               ) : (
+                 `▶ Simulate`
+               )}
+             </button>
           )}
         </div>
       </div>
       <Card>
         <div className="flex items-end gap-1.5 h-28 pt-3">
           {chartDays.map((x, i) => {
-            const ht = Math.max((x.v / maxDay) * 90, x.v > 0 ? 4 : 2)
-            const isEmpty = x.v === 0
-            const isActiveBar = activeSimBarIdx === i && dashSimCount > 0 && !isEmpty
-            const isSimDay = dashSimCount > 0 && (dashSimCount + i) >= 7
+             const ht = Math.max((x.v / maxDay) * 90, x.v > 0 ? 4 : 2)
+             const isEmpty = x.v === 0
+             const isActiveBar = activeSimBarIdx === i && currentDashSimCount > 0 && !isEmpty
+             const isSimDay = currentDashSimCount > 0 && (currentDashSimCount + i) >= 7
             return (
               <div
                 key={i}
