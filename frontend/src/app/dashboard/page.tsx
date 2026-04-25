@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, FileText, ChevronRight, Clock, Calendar,
-  TrendingUp, TrendingDown, CheckCircle,
+  TrendingUp, TrendingDown, CheckCircle, CheckCircle2,
   Banknote, Sparkles, ExternalLink, Loader2, X,
 } from "lucide-react"
 
@@ -316,11 +316,16 @@ function SsmNudgeSheet({ onDismiss, onChat }: { onDismiss: () => void; onChat: (
 
 function LaunchpadNudgeSheet({
   tier, pkg, onAccept, onDismiss,
+  totalSimRevenue, wowGrowth, bestSimDay, matchScore,
 }: {
   tier: "1" | "2"
   pkg: "A" | "B" | "track1" | "track2"
   onAccept: () => void
   onDismiss: () => void
+  totalSimRevenue: number
+  wowGrowth: number
+  bestSimDay: { d: string; v: number }
+  matchScore: number
 }) {
   const isTrack1 = pkg === "track1"
   const partners = isTrack1 ? TRACK1_PARTNERS : TRACK2_PARTNERS
@@ -329,15 +334,46 @@ function LaunchpadNudgeSheet({
     <div className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={onDismiss}>
-      <div className="w-full max-w-lg bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl"
+      <div className="w-full max-w-lg bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl overflow-y-auto max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-          style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
-          {tier === "1" ? <Banknote className="w-6 h-6 text-white" /> : <Sparkles className="w-6 h-6 text-white" />}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+            {tier === "1" ? <Banknote className="w-6 h-6 text-white" /> : <Sparkles className="w-6 h-6 text-white" />}
+          </div>
+          <div>
+            <h2 className="text-[#0D2B6E] text-[17px] font-bold leading-snug">You&apos;re ready for Launchpad</h2>
+            <p className="text-[11px] text-gray-400">iGrow Analytics Engine · merchant profile analysis</p>
+          </div>
         </div>
-        <h2 className="text-[#0D2B6E] text-[18px] font-bold leading-snug mb-1">You&apos;re ready for Launchpad</h2>
-        <p className="text-gray-500 text-[13px] leading-relaxed mb-4">
+
+        {/* Stats strip */}
+        <div className="bg-[#EEF2FB] rounded-2xl p-3 mb-3">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: `RM ${totalSimRevenue.toLocaleString()}`, label: "Revenue signal" },
+              { value: `+${wowGrowth}%`, label: "Week-over-week" },
+              { value: `${bestSimDay.d} RM ${bestSimDay.v}`, label: "Best day" },
+            ].map(({ value, label }) => (
+              <div key={label} className="bg-white rounded-xl px-2 py-2.5 flex flex-col items-center text-center">
+                <span className="text-[#0D2B6E] text-[14px] font-extrabold leading-tight">{value}</span>
+                <span className="text-[10px] text-gray-400 mt-0.5 leading-snug">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Match bar */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex-1 h-1.5 rounded-full bg-[#E5EBF8] overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${matchScore}%`, background: "linear-gradient(90deg, #1A5FD5, #2B7BE5)" }} />
+          </div>
+          <span className="text-[11px] font-bold text-[#1A5FD5] shrink-0">{matchScore}% match</span>
+        </div>
+
+        <p className="text-gray-500 text-[13px] leading-relaxed mb-3">
           Based on your revenue pattern and business profile, you may be eligible for:
         </p>
         <div className="bg-[#EEF2FB] rounded-2xl p-4 mb-5">
@@ -709,8 +745,8 @@ export default function DashboardPage() {
          }
          const cat = localStorage.getItem("igrow_category") ?? ""
          const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
-         const tier: "1" | "2" = "2"
-         const pkg: "track1" | "track2" = isFood ? "track1" : "track2"
+         const tier: "1" | "2" = isFood ? "1" : "2"
+         const pkg: "A" | "B" | "track1" | "track2" = isFood ? "B" : "track2"
          setRecommendedTier(tier)
          setRecommendedPackage(pkg)
          localStorage.setItem("igrow_tier", tier)
@@ -733,6 +769,7 @@ export default function DashboardPage() {
     localStorage.setItem("igrow_launchpad_accepted", "true")
     setLaunchpadAccepted(true)
     setShowLaunchpadNudge(false)
+    router.push("/programs#recommended")
   }
 
    const activeKey = activeTab === "week" ? weekFilter : monthFilter
@@ -827,6 +864,18 @@ export default function DashboardPage() {
   if (!mounted) return null
 
   const hasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+  const bizCategory = localStorage.getItem("igrow_category") ?? "Your Business"
+
+  // ── AI analytics computed from full 14-day sim dataset ──
+  const week1Total = DASH_SIM_DATA.slice(0, 7).reduce((a, dd) => a + dd.v, 0)
+  const week2Total = DASH_SIM_DATA.slice(7, 14).reduce((a, dd) => a + dd.v, 0)
+  const wowGrowth = Math.round(((week2Total - week1Total) / week1Total) * 100)
+  const bestSimDay = DASH_SIM_DATA.reduce((best, dd) => dd.v > best.v ? dd : best)
+  const totalSimRevenue = DASH_SIM_DATA.reduce((a, dd) => a + dd.v, 0)
+  const totalSimTxn = DASH_SIM_DATA.reduce((a, dd) => a + dd.txn, 0)
+  const avgTxnValue = totalSimRevenue / totalSimTxn
+  const matchScore = Math.min(60 + (hasSSM ? 15 : 0) + (wowGrowth > 0 ? 10 : 0) + 7, 97)
+
   const chartDays = allChartDays.slice(-7)
   const maxDay = Math.max(...chartDays.map(x => x.v), 1)
   const weeks = d.weeks.filter(w => w.v !== null)
@@ -956,82 +1005,133 @@ export default function DashboardPage() {
       <div className="h-4" />
 
       {/* ── Launchpad Package card (post-acceptance) ── */}
-      {launchpadAccepted && recommendedTier !== "" && (
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
-                {recommendedTier === "1" ? <Banknote className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-white" />}
+      {launchpadAccepted && recommendedTier !== "" && (() => {
+        const tier1Signals = [
+          { label: `RM ${(totalSimRevenue / 2 * 0.0602).toFixed(0)}/mo est. deduction`, sub: "6.02% of your TNG monthly revenue" },
+          { label: "No fixed instalments", sub: "Repayment scales with your income" },
+          { label: `${totalSimTxn} transactions recorded`, sub: "Strong transaction history for eligibility" },
+          { label: "Revenue-based eligibility", sub: "No SSM barrier for Package A" },
+        ]
+        const tier2Signals = [
+          { label: "SSM Registered", sub: "Eligible for Growth Track financing" },
+          { label: bizCategory, sub: "Aligned with Digital Commerce programs" },
+          { label: `+${wowGrowth}% week-over-week`, sub: "Consistent upward revenue trend" },
+          { label: "Peak 7–9 PM pattern", sub: "Strong evening customer engagement" },
+        ]
+        const signals = recommendedTier === "1" ? tier1Signals : tier2Signals
+        return (
+          <Card>
+            {/* Section A — Header + AI attribution + match bar */}
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+                  {recommendedTier === "1" ? <Banknote className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-white" />}
+                </div>
+                <div>
+                  <p className="text-[#0D2B6E] text-[14px] font-bold">
+                    {recommendedTier === "1" ? "Starter Track" : "Growth Track"}
+                  </p>
+                  <p className="text-[#1A5FD5] text-[12px] font-semibold">
+                    {recommendedPackage === "A" && "Package A — Solo Operator"}
+                    {recommendedPackage === "B" && "Package B — Growing SME"}
+                    {recommendedPackage === "track1" && "Digital Commerce"}
+                    {recommendedPackage === "track2" && "Public & Institutional Funding"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[#0D2B6E] text-[14px] font-bold">
-                  {recommendedTier === "1" ? "Starter Track" : "Growth Track"}
-                </p>
-                <p className="text-[#1A5FD5] text-[12px] font-semibold">
-                  {recommendedPackage === "A" && "Package A — Solo Operator"}
-                  {recommendedPackage === "B" && "Package B — Growing SME"}
-                  {recommendedPackage === "track1" && "Digital Commerce"}
-                  {recommendedPackage === "track2" && "Public & Institutional Funding"}
-                </p>
-              </div>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "#DCFCE7", color: "#166534" }}>
+                Active
+              </span>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "#DCFCE7", color: "#166534" }}>
-              Active
-            </span>
-          </div>
-
-          {recommendedTier === "1" ? (
-            <>
-              <p className="text-[13px] text-gray-500 mb-3 leading-relaxed">
-                {recommendedPackage === "A" ? "For solo hustlers. Start small, grow steady." : "For businesses ready for their next chapter."}
-              </p>
-              <div className="bg-[#EEF2FB] rounded-2xl p-3 flex flex-col gap-2 mb-3">
-                <DetailRow label="Loan range" value={recommendedPackage === "A" ? "RM 1,000 – RM 5,000" : "RM 10,000 – RM 50,000"} />
-                <DetailRow label="Revenue deduction" value="6.02% of monthly TNG revenue" />
-                <DetailRow label="Repayment" value="No fixed monthly instalments" />
-                <DetailRow label="Review trigger" value="3+ months below floor — we'll help you restructure" />
+            <p className="text-[11px] text-gray-400 mb-2">iGrow Analytics Engine · merchant profile analysis</p>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 h-1.5 rounded-full bg-[#E5EBF8] overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${matchScore}%`, background: "linear-gradient(90deg, #1A5FD5, #2B7BE5)" }} />
               </div>
-              <button className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-[#E5EBF8] hover:border-[#1A5FD5] transition-colors">
-                <span className="text-[#0D2B6E] text-[13px] font-semibold">Learn about BizCash Readiness</span>
-                <ChevronRight className="w-4 h-4 text-[#1A5FD5]" />
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2.5 mb-3">
-                {partners.map(p => (
-                  <div key={p.abbr} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EEF2FB] flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-[#1A5FD5]">{p.abbr}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#0D2B6E] truncate">{p.name}</p>
-                      <p className="text-[11px] text-gray-400 truncate">{p.offer}</p>
-                    </div>
+              <span className="text-[11px] font-bold text-[#1A5FD5] shrink-0">{matchScore}% match</span>
+            </div>
+
+            {/* Section B — Revenue Intelligence */}
+            <div className="bg-[#EEF2FB] rounded-2xl p-4 mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#1A5FD5] mb-2">Revenue Intelligence</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: `RM ${totalSimRevenue.toLocaleString()}`, label: "Revenue signal" },
+                  { value: `+${wowGrowth}%`, label: "Week-over-week" },
+                  { value: `${bestSimDay.d} · RM ${bestSimDay.v}`, label: "Best day" },
+                  { value: `RM ${avgTxnValue.toFixed(2)}`, label: "Avg per transaction" },
+                ].map(({ value, label }) => (
+                  <div key={label} className="bg-white rounded-xl p-3">
+                    <p className="text-[15px] font-extrabold text-[#0D2B6E] leading-tight">{value}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3" style={{ backgroundColor: "#F0F5FF" }}>
-                <span className="text-[11px] text-[#1A5FD5] font-medium leading-snug">
-                  TNG pre-fills your application form using your merchant data.
-                </span>
-              </div>
-              <button
-                onClick={() => router.push('/chat?prompt=' + encodeURIComponent(
-                  isTrack1
-                    ? "What incubator and grant programs are available for digital commerce food businesses in Malaysia? I'm a TNG merchant looking to grow."
-                    : "What public funding and institutional programs are available for service-based micro businesses in Malaysia? I'm a TNG merchant."
-                ))}
-                className="w-full rounded-full py-3.5 font-bold text-[14px] text-white flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
-                style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}
-              >
-                View Matched Programs →
-              </button>
-            </>
-          )}
-        </Card>
-      )}
+            </div>
+
+            {/* Section C — Why you were matched */}
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[#6B7280] mb-2">Why you were matched</p>
+            <div className="flex flex-col gap-2 mb-4">
+              {signals.map(({ label, sub }) => (
+                <div key={label} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#1A5FD5] shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#0D2B6E] leading-snug">{label}</p>
+                    <p className="text-[11px] text-gray-400">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Section D — Partners + CTA */}
+            {recommendedTier === "1" ? (
+              <>
+                <div className="bg-[#EEF2FB] rounded-2xl p-3 flex flex-col gap-2 mb-3">
+                  <DetailRow label="Loan range" value={recommendedPackage === "A" ? "RM 1,000 – RM 5,000" : "RM 10,000 – RM 50,000"} />
+                  <DetailRow label="Revenue deduction" value="6.02% of monthly TNG revenue" />
+                  <DetailRow label="Repayment" value="No fixed monthly instalments" />
+                  <DetailRow label="Review trigger" value="3+ months below floor — restructure support" />
+                </div>
+                <button
+                  onClick={() => router.push('/programs')}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 border-[#E5EBF8] hover:border-[#1A5FD5] transition-colors">
+                  <span className="text-[#0D2B6E] text-[13px] font-semibold">View All Programs & Apply</span>
+                  <ChevronRight className="w-4 h-4 text-[#1A5FD5]" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2.5 mb-3">
+                  {partners.map(p => (
+                    <div key={p.abbr} className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#EEF2FB] flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-[#1A5FD5]">{p.abbr}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-[#0D2B6E] truncate">{p.name}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{p.offer}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3" style={{ backgroundColor: "#F0F5FF" }}>
+                  <span className="text-[11px] text-[#1A5FD5] font-medium leading-snug">
+                    TNG pre-fills your application form using your merchant data.
+                  </span>
+                </div>
+                <button
+                  onClick={() => router.push('/programs')}
+                  className="w-full rounded-full py-3.5 font-bold text-[14px] text-white flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md"
+                  style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}
+                >
+                  View Matched Programs →
+                </button>
+              </>
+            )}
+          </Card>
+        )
+      })()}
 
       {/* ── Hero metrics ── */}
       <div className="grid grid-cols-2 gap-3 px-5 mb-4">
@@ -1333,6 +1433,10 @@ export default function DashboardPage() {
           pkg={recommendedPackage as "A" | "B" | "track1" | "track2"}
           onAccept={handleLaunchpadAccept}
           onDismiss={() => setShowLaunchpadNudge(false)}
+          totalSimRevenue={totalSimRevenue}
+          wowGrowth={wowGrowth}
+          bestSimDay={bestSimDay}
+          matchScore={matchScore}
         />
       )}
 

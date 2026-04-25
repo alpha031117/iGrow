@@ -16,6 +16,18 @@ type Transaction = {
   Icon: LucideIcon
 }
 
+type StoredHomeSimTransaction = {
+  id: string
+  title: string
+  time: string
+  amount: number
+  categoryId: string
+}
+
+const HOME_SIM_COUNT_KEY = 'igrow_home_sim_count'
+const HOME_SIM_TOTAL_KEY = 'igrow_home_sim_total'
+const HOME_SIM_TXNS_KEY = 'igrow_home_sim_transactions'
+
 function getIconForCategory(categoryId: string, credit: boolean) {
   if (credit) return { Icon: ArrowDownLeft, iconBg: '#10B981' }
   switch (categoryId) {
@@ -36,6 +48,33 @@ function mapTransaction(tx: RawTransaction): Transaction {
     credit,
     iconBg,
     Icon,
+  }
+}
+
+function mapStoredHomeSimTransaction(tx: StoredHomeSimTransaction): Transaction {
+  return {
+    id: tx.id,
+    name: tx.title,
+    time: tx.time,
+    amount: `+RM ${tx.amount.toFixed(2)}`,
+    credit: true,
+    ...getIconForCategory(tx.categoryId, true),
+  }
+}
+
+function readStoredHomeSimTransactions(): StoredHomeSimTransaction[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(HOME_SIM_TXNS_KEY) ?? '[]')
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((tx): tx is StoredHomeSimTransaction =>
+      typeof tx?.id === 'string' &&
+      typeof tx?.title === 'string' &&
+      typeof tx?.time === 'string' &&
+      typeof tx?.amount === 'number' &&
+      typeof tx?.categoryId === 'string'
+    )
+  } catch {
+    return []
   }
 }
 
@@ -160,6 +199,7 @@ export default function HomePage() {
   // Use refs so the interval callback always reads fresh values
   const simCountRef = useRef(0)
   const simTotalRef = useRef(0)
+  const simTransactionsRef = useRef<StoredHomeSimTransaction[]>([])
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -169,6 +209,23 @@ export default function HomePage() {
       const keys = ['igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
       keys.forEach(k => localStorage.removeItem(k))
     }
+
+    const savedTransactions = readStoredHomeSimTransactions()
+    const savedCount = Number.parseInt(localStorage.getItem(HOME_SIM_COUNT_KEY) ?? String(savedTransactions.length), 10)
+    const savedTotal = Number.parseFloat(localStorage.getItem(HOME_SIM_TOTAL_KEY) ?? '')
+    const simCountValue = Number.isFinite(savedCount) ? Math.min(savedCount, SIM_THRESHOLD) : savedTransactions.length
+    const simTotalValue = Number.isFinite(savedTotal)
+      ? savedTotal
+      : savedTransactions.reduce((acc, tx) => acc + tx.amount, 0)
+
+    simCountRef.current = simCountValue
+    simTotalRef.current = simTotalValue
+    simTransactionsRef.current = savedTransactions
+    setSimCount(simCountValue)
+    setSimTotal(simTotalValue)
+    setTodayTxns([...savedTransactions.map(mapStoredHomeSimTransaction), ...initialTodayTransactions])
+    setBalance(103164.10 + simTotalValue)
+    setDetectionBannerVisible(!onboarded && simCountValue >= SIM_THRESHOLD)
   }, [])
 
   // Clean up interval on unmount
@@ -179,13 +236,20 @@ export default function HomePage() {
   function addOneSimTransaction() {
     const idx = simCountRef.current % simulationTransactions.length
     const txRaw = simulationTransactions[idx]
-    const newTx: Transaction = {
-      id: txRaw.id + '-' + Date.now(),
-      name: txRaw.title,
+    const storedTx: StoredHomeSimTransaction = {
+      id: `${txRaw.id}-${Date.now()}`,
+      title: txRaw.title,
       time: new Date().toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-      amount: `+RM ${txRaw.amount.toFixed(2)}`,
+      amount: txRaw.amount,
+      categoryId: txRaw.category_id,
+    }
+    const newTx: Transaction = {
+      id: storedTx.id,
+      name: storedTx.title,
+      time: storedTx.time,
+      amount: `+RM ${storedTx.amount.toFixed(2)}`,
       credit: true,
-      ...getIconForCategory(txRaw.category_id, true),
+      ...getIconForCategory(storedTx.categoryId, true),
     }
 
     setTodayTxns(prev => [newTx, ...prev])
@@ -198,9 +262,13 @@ export default function HomePage() {
     const nextTotal = simTotalRef.current + txRaw.amount
     simCountRef.current = nextCount
     simTotalRef.current = nextTotal
+    simTransactionsRef.current = [storedTx, ...simTransactionsRef.current]
     setSimCount(nextCount)
     setSimTotal(nextTotal)
     setBalance(prev => prev + txRaw.amount)
+    localStorage.setItem(HOME_SIM_COUNT_KEY, String(nextCount))
+    localStorage.setItem(HOME_SIM_TOTAL_KEY, String(nextTotal))
+    localStorage.setItem(HOME_SIM_TXNS_KEY, JSON.stringify(simTransactionsRef.current))
 
     if (nextCount >= SIM_THRESHOLD) {
       // Stop the interval
@@ -368,6 +436,8 @@ export default function HomePage() {
           [
             'igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated',
             'igrow_tier', 'igrow_package', 'igrow_dash_sim_count', 'igrow_launchpad_accepted',
+            'igrow_sim_completed', 'igrow_ssm_nudge_shown', 'igrow_launchpad_nudge_shown',
+            HOME_SIM_COUNT_KEY, HOME_SIM_TOTAL_KEY, HOME_SIM_TXNS_KEY,
           ].forEach(k => localStorage.removeItem(k))
           window.location.reload()
         }}
