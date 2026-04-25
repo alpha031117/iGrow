@@ -119,10 +119,11 @@ export default function HomePage() {
   const [isOnboarded, setIsOnboarded] = useState(false)
 
   useEffect(() => {
-    // Clear all iGrow state on home page load so refresh resets the demo flow
-    const keys = ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
+    const onboarded = localStorage.getItem('igrow_onboarded') === 'true'
+    setIsOnboarded(onboarded)
+    // Reset other demo state but preserve onboarded status across navigation
+    const keys = ['igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated']
     keys.forEach(k => localStorage.removeItem(k))
-    setIsOnboarded(false)
   }, [])
 
   function handleLaunchpadClick() {
@@ -243,6 +244,17 @@ export default function HomePage() {
           onAccept={handleAccept}
         />
       )}
+
+      {/* Hidden demo reset — bottom-right corner */}
+      <button
+        onClick={() => {
+          ['igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated'].forEach(k => localStorage.removeItem(k))
+          window.location.reload()
+        }}
+        className="fixed bottom-4 right-4 w-4 h-4 rounded-full opacity-5 hover:opacity-25 transition-opacity"
+        style={{ backgroundColor: '#0D2B6E' }}
+        aria-hidden="true"
+      />
     </div>
   )
 }
