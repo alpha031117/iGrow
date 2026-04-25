@@ -28,6 +28,11 @@ const HOME_SIM_COUNT_KEY = 'igrow_home_sim_count'
 const HOME_SIM_TOTAL_KEY = 'igrow_home_sim_total'
 const HOME_SIM_TXNS_KEY = 'igrow_home_sim_transactions'
 
+const DB_BASE_BALANCE = 103164.10
+
+type BizStats = { thisWeek: string; txn: string; bestDay: string }
+const DEFAULT_BIZ_STATS: BizStats = { thisWeek: 'RM 1,440', txn: '218', bestDay: 'Friday' }
+
 function getIconForCategory(categoryId: string, credit: boolean) {
   if (credit) return { Icon: ArrowDownLeft, iconBg: '#10B981' }
   switch (categoryId) {
@@ -188,7 +193,9 @@ export default function HomePage() {
   const [showConsent, setShowConsent] = useState(false)
   const [isOnboarded, setIsOnboarded] = useState(false)
 
-  const [balance, setBalance] = useState(103164.10)
+  const [dbBaseBalance, setDbBaseBalance] = useState(DB_BASE_BALANCE)
+  const [balance, setBalance] = useState(DB_BASE_BALANCE)
+  const [bizStats, setBizStats] = useState<BizStats>(DEFAULT_BIZ_STATS)
   const [simCount, setSimCount] = useState(0)
   const [simTotal, setSimTotal] = useState(0)
   const [simRunning, setSimRunning] = useState(false)
@@ -224,8 +231,32 @@ export default function HomePage() {
     setSimCount(simCountValue)
     setSimTotal(simTotalValue)
     setTodayTxns([...savedTransactions.map(mapStoredHomeSimTransaction), ...initialTodayTransactions])
-    setBalance(103164.10 + simTotalValue)
     setDetectionBannerVisible(!onboarded && simCountValue >= SIM_THRESHOLD)
+
+    // Fetch real balance from DB, overlay simulation delta on top
+    fetch('/api/account')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const base = data?.balance != null ? Number(data.balance) : DB_BASE_BALANCE
+        setDbBaseBalance(base)
+        setBalance(base + simTotalValue)
+      })
+      .catch(() => {
+        setBalance(DB_BASE_BALANCE + simTotalValue)
+      })
+
+    // Fetch live business stats for the stats card
+    fetch('/api/analytics?period=thisWeek')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return
+        setBizStats({
+          thisWeek: `RM ${Number(data.heroSales).toLocaleString('en-MY', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+          txn: String(data.heroTxn),
+          bestDay: (data.summary?.bestDay ?? '').replace(/\s*—.*$/, '') || DEFAULT_BIZ_STATS.bestDay,
+        })
+      })
+      .catch(() => {})
   }, [])
 
   // Clean up interval on unmount
@@ -265,7 +296,7 @@ export default function HomePage() {
     simTransactionsRef.current = [storedTx, ...simTransactionsRef.current]
     setSimCount(nextCount)
     setSimTotal(nextTotal)
-    setBalance(prev => prev + txRaw.amount)
+    setBalance(dbBaseBalance + nextTotal)
     localStorage.setItem(HOME_SIM_COUNT_KEY, String(nextCount))
     localStorage.setItem(HOME_SIM_TOTAL_KEY, String(nextTotal))
     localStorage.setItem(HOME_SIM_TXNS_KEY, JSON.stringify(simTransactionsRef.current))
@@ -368,9 +399,9 @@ export default function HomePage() {
             </div>
             <div className="flex border-t border-[#EEF2FB]">
               {[
-                { label: 'This Week', value: 'RM 1,440' },
-                { label: 'Transactions', value: '218' },
-                { label: 'Best Day', value: 'Friday' },
+                { label: 'This Week', value: bizStats.thisWeek },
+                { label: 'Transactions', value: bizStats.txn },
+                { label: 'Best Day', value: bizStats.bestDay },
               ].map((s, i) => (
                 <div key={i} className={`flex-1 px-3 py-2.5 ${i > 0 ? 'border-l border-[#EEF2FB]' : ''}`}>
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">{s.label}</p>

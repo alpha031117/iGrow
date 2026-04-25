@@ -3,6 +3,18 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False)
+    account_number = Column(String(20), nullable=False)
+    balance = Column(Numeric(15, 2), nullable=False)
+    currency = Column(String(3), nullable=False, default="MYR")
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+
 class TransactionCategory(Base):
     __tablename__ = "transaction_categories"
 
