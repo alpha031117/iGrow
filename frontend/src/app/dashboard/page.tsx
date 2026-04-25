@@ -589,39 +589,90 @@ export default function DashboardPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
    useEffect(() => {
+     const loadState = () => {
+       const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+       console.log("[Dashboard] Loaded dashSimCount from localStorage:", savedCount)
+       setDashSimCount(savedCount)
+       dashSimCountRef.current = savedCount
+
+       const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
+       setLaunchpadAccepted(accepted)
+
+       const savedTier = localStorage.getItem("igrow_tier") as "1" | "2" | null
+       const savedPkg = localStorage.getItem("igrow_package") as "A" | "B" | "track1" | "track2" | null
+       if (savedTier) {
+         setRecommendedTier(savedTier)
+         setRecommendedPackage(savedPkg ?? "")
+       }
+
+       // If simulation was completed but nudges weren't shown/closed, show them now
+       const simCompleted = localStorage.getItem("igrow_sim_completed") === "true"
+       if (simCompleted && savedCount >= DASH_SIM_THRESHOLD && !accepted) {
+         const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+         if (!userHasSSM) {
+           setShowSsmNudge(true)
+         } else if (savedTier) {
+           setShowLaunchpadNudge(true)
+         }
+       }
+     }
+
      setMounted(true)
      const now = new Date().toISOString().slice(0, 10)
      setDateFrom(now); setDateTo(now)
-
-     const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-     setDashSimCount(savedCount)
-     dashSimCountRef.current = savedCount
-
-     const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
-     setLaunchpadAccepted(accepted)
-
-     const savedTier = localStorage.getItem("igrow_tier") as "1" | "2" | null
-     const savedPkg = localStorage.getItem("igrow_package") as "A" | "B" | "track1" | "track2" | null
-     if (savedTier) {
-       setRecommendedTier(savedTier)
-       setRecommendedPackage(savedPkg ?? "")
-     }
-
-     // If simulation was completed but nudges weren't shown/closed, show them now
-     const simCompleted = localStorage.getItem("igrow_sim_completed") === "true"
-     if (simCompleted && savedCount >= DASH_SIM_THRESHOLD && !accepted) {
-       const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
-       if (!userHasSSM) {
-         setShowSsmNudge(true)
-       } else if (savedTier) {
-         setShowLaunchpadNudge(true)
-       }
-     }
+     
+     loadState()
    }, [])
 
-  useEffect(() => {
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [])
+   useEffect(() => {
+     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+   }, [])
+
+   // Listen for visibility/focus changes and storage events to sync state
+   useEffect(() => {
+     const handleFocus = () => {
+       console.log("[Dashboard] Window focused, syncing state from localStorage")
+       const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+       if (savedCount > 0 && savedCount !== dashSimCount) {
+         console.log("[Dashboard] Syncing dashSimCount:", savedCount)
+         setDashSimCount(savedCount)
+         dashSimCountRef.current = savedCount
+       }
+     }
+
+     const handleVisibilityChange = () => {
+       if (document.visibilityState === 'visible') {
+         console.log("[Dashboard] Page became visible, syncing state from localStorage")
+         const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
+         if (savedCount > 0 && savedCount !== dashSimCount) {
+           console.log("[Dashboard] Syncing dashSimCount:", savedCount)
+           setDashSimCount(savedCount)
+           dashSimCountRef.current = savedCount
+         }
+       }
+     }
+
+     const handleStorageChange = (e: StorageEvent) => {
+       if (e.key === "igrow_dash_sim_count") {
+         const newCount = parseInt(e.newValue ?? "0")
+         console.log("[Dashboard] Storage event - dashSimCount changed to:", newCount)
+         if (newCount !== dashSimCount) {
+           setDashSimCount(newCount)
+           dashSimCountRef.current = newCount
+         }
+       }
+     }
+
+     window.addEventListener('focus', handleFocus)
+     document.addEventListener('visibilitychange', handleVisibilityChange)
+     window.addEventListener('storage', handleStorageChange)
+
+     return () => {
+       window.removeEventListener('focus', handleFocus)
+       document.removeEventListener('visibilitychange', handleVisibilityChange)
+       window.removeEventListener('storage', handleStorageChange)
+     }
+   }, [dashSimCount])
 
    function runOneDashSimTick() {
      const next = dashSimCountRef.current + 1
