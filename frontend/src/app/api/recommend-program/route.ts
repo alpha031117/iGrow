@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     const bestDay: string = (thisMonth.best_day ?? "Friday").replace(/\s*—.*$/, "")
     const monthlyRevenue = Number(thisMonth.hero_sales ?? 0)
 
-    const systemPrompt = `You are iGrow, a financial eligibility engine for TNG eWallet Malaysia. You assess micro-merchant profiles and recommend the most suitable financing or growth program.
+    const systemPrompt = `You are AlphaGo, a financial eligibility engine for TNG eWallet Malaysia. You assess micro-merchant profiles and recommend the most suitable financing or growth program.
 
 Available programs:
 - Package A (Solo Operator): BizCash RM 1,000–5,000. Requires: active TNG account, 3+ months history, RM 300+/month revenue. No SSM needed.

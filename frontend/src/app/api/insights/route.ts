@@ -43,7 +43,7 @@ type InsightPayload = {
 }
 
 function buildSystemPrompt(payload: InsightPayload): string {
-  return `You are iGrow, an AI business advisor for Malaysian micro-merchants using TNG eWallet.
+  return `You are AlphaGo, an AI business advisor for Malaysian micro-merchants using TNG eWallet.
 Generate two short insight cards based on merchant sales data.
 Respond ONLY with a valid JSON object — no markdown, no code fences, no explanation.
 

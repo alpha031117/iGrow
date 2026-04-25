@@ -70,7 +70,7 @@ export async function GET() {
     // Week-over-week growth
     const vsPrev: number = thisMonth.vs_prev ?? 0
 
-    const systemPrompt = `You are iGrow, an AI financial assistant embedded in TNG eWallet Malaysia. You analyse transaction patterns to detect whether a personal account is being used for micro-business activity.
+    const systemPrompt = `You are AlphaGo, an AI financial assistant embedded in TNG eWallet Malaysia. You analyse transaction patterns to detect whether a personal account is being used for micro-business activity.
 
 Malaysian micro-business (food stall, home baker, hawker) patterns:
 - High transaction frequency: 10–30 small incoming payments per day

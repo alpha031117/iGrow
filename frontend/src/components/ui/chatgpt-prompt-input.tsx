@@ -305,7 +305,7 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Message iGrow..."
+          placeholder="Message AlphaGo..."
           className="w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-400 focus:ring-0 focus-visible:outline-none min-h-[48px]"
         />
 

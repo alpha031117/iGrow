@@ -291,7 +291,7 @@ export default function BusinessPage() {
                         onClick={() => router.push('/chat?prompt=' + encodeURIComponent("How do I register my business with SSM in Malaysia? I'm a small business owner using TNG."))}
                         className="mt-1.5 text-[11px] font-bold text-amber-700 underline underline-offset-2"
                       >
-                        Ask iGrow how to get started →
+                        Ask AlphaGo how to get started →
                       </button>
                     </div>
                   </div>

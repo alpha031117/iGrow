@@ -8,7 +8,7 @@ import { PromptBox, type FileAttachment } from "@/components/ui/chatgpt-prompt-i
 import type { Message, ImageContent, TextContent } from "@mariozechner/pi-ai";
 
 const SYSTEM_PROMPT =
-  "You are iGrow, an AI-powered financial growth assistant for TNG (Touch 'n Go) merchants and micro-SME users in Malaysia. You help users understand TNG Business Account features, Merchant QR setup, BizCash financing readiness, and incubator/grant programs like MDEC, TEKUN, SIDEC, Cradle Fund, SME Corp, Bank Negara iTEKAD, 1337 Ventures, and PERNAS. You guide informal traders, home-based sellers, freelancers, and micro-businesses toward becoming finance-ready merchants. Keep answers clear, practical, and encouraging. Always remind users that this is not financial advice and that TNG products are subject to eligibility review. When the user shares a file or document, analyze it carefully and provide specific insights.";
+  "You are AlphaGo, an AI-powered financial growth assistant for TNG (Touch 'n Go) merchants and micro-SME users in Malaysia. You help users understand TNG Business Account features, Merchant QR setup, BizCash financing readiness, and incubator/grant programs like MDEC, TEKUN, SIDEC, Cradle Fund, SME Corp, Bank Negara iTEKAD, 1337 Ventures, and PERNAS. You guide informal traders, home-based sellers, freelancers, and micro-businesses toward becoming finance-ready merchants. Keep answers clear, practical, and encouraging. Always remind users that this is not financial advice and that TNG products are subject to eligibility review. When the user shares a file or document, analyze it carefully and provide specific insights.";
 
 const MODEL_OPTIONS = [
   { id: "haiku", label: "Haiku 4.5", sublabel: "Fast" },
@@ -183,8 +183,8 @@ function ChatPage() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-3 bg-white dark:bg-[#2a2a2a] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-sm">iG</div>
-          <span className="font-semibold text-zinc-900 dark:text-zinc-50 text-sm">iGrow</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-sm">AG</div>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-50 text-sm">AlphaGo</span>
         </div>
         <div className="flex gap-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 p-1">
           {MODEL_OPTIONS.map((opt) => (
@@ -318,7 +318,7 @@ function ChatPage() {
               <div className="max-w-2xl mx-auto">
                 <PromptBox value={input} onValueChange={setInput} onSubmit={() => send()} isLoading={isStreaming} attachment={attachment} onAttachmentChange={setAttachment} />
                 <p className="text-center text-[11px] text-zinc-400 dark:text-zinc-600 mt-2">
-                  iGrow can make mistakes. Always verify financial decisions.
+                  AlphaGo can make mistakes. Always verify financial decisions.
                 </p>
               </div>
             </div>

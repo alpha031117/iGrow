@@ -409,7 +409,7 @@ export default function HomePage() {
               className="flex items-center gap-1.5 border border-white/30 text-white text-[13px] font-semibold px-4 py-2 rounded-full transition-colors active:scale-95"
               style={{ backgroundColor: isOnboarded ? 'rgba(110,231,183,0.2)' : 'rgba(255,255,255,0.15)' }}
             >
-              {isOnboarded ? '🏢 My Business →' : '+ iGrow Launchpad'}
+              {isOnboarded ? '🏢 My Business →' : '+ AlphaGo Launchpad'}
             </button>
             <button className="flex items-center gap-1 text-white text-[13px] font-semibold px-4 py-2 rounded-full border border-white/30 bg-white/10 hover:bg-white/20 transition-colors">
               Transactions →

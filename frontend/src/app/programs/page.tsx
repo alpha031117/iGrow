@@ -326,7 +326,7 @@ export default function ProgramsPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Back</span>
           </button>
-          <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mb-1">iGrow Launchpad</p>
+          <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mb-1">AlphaGo Launchpad</p>
           <h1 className="text-white text-[22px] font-bold leading-snug">Matched Programs</h1>
           <p className="text-blue-200 text-[13px] mt-1">
             {recommendedProgram
@@ -352,7 +352,7 @@ export default function ProgramsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-[13px] font-bold text-[#0D2B6E]">iGrow Analytics Engine</p>
+                  <p className="text-[13px] font-bold text-[#0D2B6E]">AlphaGo Analytics Engine</p>
                   <span className="text-[9px] font-bold bg-[#EEF2FB] text-[#1A5FD5] px-1.5 py-0.5 rounded-full">v2.1</span>
                 </div>
                 <p className="text-[11px] text-gray-400">Merchant profile analysis · 5 signals evaluated · {aiRec?.matchScore ?? 87}% match</p>
