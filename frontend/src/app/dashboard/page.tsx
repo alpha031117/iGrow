@@ -221,14 +221,18 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
       ["Daily Average", d.summary.avg],
       ["Best Day", d.summary.bestDay],
     ]
-    rows.forEach(([l, v]) => {
+    rows.forEach(([l, v], i) => {
       doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(100, 116, 139)
       doc.text(l, M, y)
       doc.setFont("helvetica", "bold"); doc.setTextColor(15, 23, 42)
       doc.text(v, W - M, y, { align: "right" })
-      y += 7; doc.line(M, y - 3, W - M, y - 3)
+      // Draw separator line well below the text baseline
+      if (i < rows.length - 1) {
+        doc.line(M, y + 3, W - M, y + 3)
+      }
+      y += 9
     })
-    y += 6
+    y += 4
 
     // Bar chart
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
@@ -251,7 +255,7 @@ function ReportSheet({ open, onClose, activeData }: { open: boolean; onClose: ()
       doc.setTextColor(100, 116, 139); doc.setFontSize(8); doc.setFont("helvetica", "normal")
       doc.text(day.d, x + bw / 2, barBaseY + 5, { align: "center" })
     })
-    y = barBaseY + 12
+    y = barBaseY + 14
 
     // Peak hours
     doc.setTextColor(15, 23, 42); doc.setFontSize(14); doc.setFont("helvetica", "bold")
