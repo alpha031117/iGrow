@@ -69,6 +69,14 @@ const DASH_SIM_DATA: SimDay[] = [
 ]
 const DASH_SIM_THRESHOLD = 14
 const DASH_SIM_INTERVAL_MS = 1200
+const DASH_SIM_COUNT_KEY = "igrow_dash_sim_count"
+const DASH_SIM_COMPLETED_KEY = "igrow_sim_completed"
+
+function readStoredDashSimCount() {
+  const parsed = Number.parseInt(localStorage.getItem(DASH_SIM_COUNT_KEY) ?? "0", 10)
+  if (!Number.isFinite(parsed)) return 0
+  return Math.max(0, Math.min(parsed, DASH_SIM_DATA.length))
+}
 
 // ─── Partner data ─────────────────────────────────────────────────────
 const TRACK1_PARTNERS = [
@@ -231,6 +239,15 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
   return (
     <div className={`bg-white rounded-[20px] p-5 mx-5 mb-4 shadow-sm ${className ?? ""}`}>
       {children}
+    </div>
+  )
+}
+
+function InsightSkeleton() {
+  return (
+    <div className="space-y-2 mt-1">
+      <div className="h-2.5 rounded-full animate-pulse" style={{ backgroundColor: "#E2E8F0", width: "90%" }} />
+      <div className="h-2.5 rounded-full animate-pulse" style={{ backgroundColor: "#E2E8F0", width: "70%" }} />
     </div>
   )
 }
@@ -588,12 +605,17 @@ export default function DashboardPage() {
   const dashSimCountRef = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // AI insights state
+  const [aiInsights, setAiInsights] = useState<Record<string, { tip: { title: string; body: string; icon: string }; health: { title: string; body: string; icon: string } }>>({})
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const insightsFetchedRef = useRef<Set<string>>(new Set())
+
    useEffect(() => {
      const loadState = () => {
-       const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-       console.log("[Dashboard] Loaded dashSimCount from localStorage:", savedCount)
+       const savedCount = readStoredDashSimCount()
        setDashSimCount(savedCount)
        dashSimCountRef.current = savedCount
+       setActiveSimBarIdx(savedCount > 0 ? 6 : null)
 
        const accepted = localStorage.getItem("igrow_launchpad_accepted") === "true"
        setLaunchpadAccepted(accepted)
@@ -606,7 +628,7 @@ export default function DashboardPage() {
        }
 
        // If simulation was completed but nudges weren't shown/closed, show them now
-       const simCompleted = localStorage.getItem("igrow_sim_completed") === "true"
+       const simCompleted = localStorage.getItem(DASH_SIM_COMPLETED_KEY) === "true"
        if (simCompleted && savedCount >= DASH_SIM_THRESHOLD && !accepted) {
          const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
          if (!userHasSSM) {
@@ -617,11 +639,11 @@ export default function DashboardPage() {
        }
      }
 
-     setMounted(true)
      const now = new Date().toISOString().slice(0, 10)
      setDateFrom(now); setDateTo(now)
      
      loadState()
+     setMounted(true)
    }, [])
 
    useEffect(() => {
@@ -631,33 +653,25 @@ export default function DashboardPage() {
     // Listen for visibility/focus changes and storage events to sync state
     useEffect(() => {
       const syncStateFromStorage = () => {
-        const savedCount = parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0")
-        console.log("[Dashboard] Current state dashSimCount:", dashSimCount, "Saved in localStorage:", savedCount)
-        if (savedCount !== dashSimCount) {
-          console.log("[Dashboard] Syncing dashSimCount from localStorage to:", savedCount)
-          setDashSimCount(savedCount)
-          dashSimCountRef.current = savedCount
-        }
+        const savedCount = readStoredDashSimCount()
+        dashSimCountRef.current = savedCount
+        setDashSimCount(savedCount)
+        setActiveSimBarIdx(savedCount > 0 ? 6 : null)
       }
 
       const handleFocus = () => {
-        console.log("[Dashboard] Window focused, syncing state")
         syncStateFromStorage()
       }
 
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          console.log("[Dashboard] Page became visible, syncing state")
           syncStateFromStorage()
         }
       }
 
       const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === "igrow_dash_sim_count") {
-          const newCount = parseInt(e.newValue ?? "0")
-          console.log("[Dashboard] Storage event - dashSimCount changed to:", newCount)
-          setDashSimCount(newCount)
-          dashSimCountRef.current = newCount
+        if (e.key === DASH_SIM_COUNT_KEY) {
+          syncStateFromStorage()
         }
       }
 
@@ -677,15 +691,14 @@ export default function DashboardPage() {
       dashSimCountRef.current = next
       setDashSimCount(next)
       setActiveSimBarIdx(6)  // newest day is always rightmost bar
-      localStorage.setItem("igrow_dash_sim_count", String(next))
-      console.log("[Dashboard] Simulation tick:", next, "- saved to localStorage")
+      localStorage.setItem(DASH_SIM_COUNT_KEY, String(next))
 
      if (next >= DASH_SIM_THRESHOLD) {
        if (intervalRef.current) clearInterval(intervalRef.current)
        intervalRef.current = null
        setSimRunning(false)
        setIsAnalyzing(true)
-       localStorage.setItem("igrow_sim_completed", "true")
+       localStorage.setItem(DASH_SIM_COMPLETED_KEY, "true")
        setTimeout(() => {
          setIsAnalyzing(false)
          const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
@@ -709,7 +722,7 @@ export default function DashboardPage() {
    }
 
   function handleStartDashSimulate() {
-    if (simRunning || launchpadAccepted || dashSimCount >= DASH_SIM_THRESHOLD) return
+    if (simRunning || launchpadAccepted || dashSimCountRef.current >= DASH_SIM_THRESHOLD) return
     setSimRunning(true)
     intervalRef.current = setInterval(runOneDashSimTick, DASH_SIM_INTERVAL_MS)
   }
@@ -725,8 +738,7 @@ export default function DashboardPage() {
    const activeKey = activeTab === "week" ? weekFilter : monthFilter
    const d = DATA[activeKey]
 
-   // Always read fresh count from localStorage to ensure we have latest value
-   const currentDashSimCount = typeof window !== 'undefined' ? parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0") : dashSimCount
+   const currentDashSimCount = dashSimCount
 
    // Simulation continues from existing demo data — append new days and show last 7
    const simRevealedDays = DASH_SIM_DATA.slice(0, currentDashSimCount)
@@ -762,6 +774,56 @@ export default function DashboardPage() {
     setShowCustom(false)
   }
 
+  async function fetchInsights(key: string) {
+    if (insightsFetchedRef.current.has(key)) return
+    insightsFetchedRef.current.add(key)
+    setInsightsLoading(true)
+    const periodData = DATA[key]
+    if (!periodData) { setInsightsLoading(false); return }
+    const cat = localStorage.getItem("igrow_category") ?? "Food & Drinks"
+    const ssm = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+    const weekTrend = periodData.weeks.map((w: { w: string; v: number }) => `${w.w}:${w.v}`).join(", ") || "no data"
+    const payload = {
+      periodLabel: periodData.periodLabel,
+      heroSales: periodData.heroSales,
+      heroTxn: periodData.heroTxn,
+      heroAvg: periodData.heroAvg,
+      vsPrev: periodData.vsPrev,
+      vsPrevLabel: periodData.vsPrevLabel,
+      bestDay: periodData.summary.bestDay,
+      dailyAvg: periodData.summary.avg,
+      peakHour: periodData.peakHour,
+      peakShare: periodData.peakShare,
+      days: periodData.days,
+      weekTrend,
+      category: cat,
+      hasSSM: ssm,
+    }
+    try {
+      const res = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setAiInsights((prev) => ({ ...prev, [key]: data }))
+    } catch (err) {
+      console.warn("[insights] fallback to static:", err)
+      insightsFetchedRef.current.delete(key)
+    } finally {
+      setInsightsLoading(false)
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!mounted) return
+    const key = activeTab === "week" ? weekFilter : monthFilter
+    fetchInsights(key)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, weekFilter, monthFilter, mounted])
+
   if (!mounted) return null
 
   const hasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
@@ -779,6 +841,14 @@ export default function DashboardPage() {
   const customKey = activeTab === "week" ? "customWeek" : "customMonth"
   const isTrack1 = recommendedPackage === "track1"
   const partners = isTrack1 ? TRACK1_PARTNERS : TRACK2_PARTNERS
+
+  const activeTip = aiInsights[activeKey]?.tip
+    ? { ...d.tip, ...aiInsights[activeKey].tip }
+    : d.tip
+  const activeHealth = aiInsights[activeKey]?.health
+    ? { ...d.health, ...aiInsights[activeKey].health }
+    : d.health
+  const isAiActive = !!aiInsights[activeKey]
 
   return (
     <div className="min-h-screen pb-8" style={{ backgroundColor: C.g50, fontFamily: "Inter, sans-serif", maxWidth: 430, margin: "0 auto" }}>
@@ -1129,13 +1199,30 @@ export default function DashboardPage() {
 
       {/* ── Tip card ── */}
       <div className="mx-5 mb-4">
-        <div className="rounded-[20px] p-5 flex gap-3.5 items-start" style={{ background: d.tip.bg, border: `1px solid ${d.tip.border}` }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] shrink-0" style={{ backgroundColor: d.tip.color }}>
-            {d.tip.icon}
+        <div className="rounded-[20px] p-5 flex gap-3.5 items-start" style={{ background: activeTip.bg, border: `1px solid ${activeTip.border}` }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] shrink-0" style={{ backgroundColor: activeTip.color }}>
+            {insightsLoading ? "⏳" : activeTip.icon}
           </div>
-          <div>
-            <p className="text-[12px] font-bold mb-0.5" style={{ color: d.tip.color }}>{d.tip.title}</p>
-            <p className="text-[13px] leading-relaxed" style={{ color: C.g600 }} dangerouslySetInnerHTML={{ __html: d.tip.body }} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-[12px] font-bold" style={{ color: activeTip.color }}>
+                {insightsLoading ? "Generating insight…" : activeTip.title}
+              </p>
+              {isAiActive && !insightsLoading && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: activeTip.color + "18", color: activeTip.color }}>
+                  ✨ AI
+                </span>
+              )}
+            </div>
+            {insightsLoading ? (
+              <InsightSkeleton />
+            ) : (
+              <p
+                className={`text-[13px] leading-relaxed${isAiActive ? " animate-fadeIn" : ""}`}
+                style={{ color: C.g600 }}
+                dangerouslySetInnerHTML={{ __html: activeTip.body }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1206,13 +1293,30 @@ export default function DashboardPage() {
 
       {/* ── Health card ── */}
       <div className="mx-5 mb-4">
-        <div className="rounded-[20px] p-5 flex gap-3.5 items-start" style={{ background: d.health.bg, border: `1px solid ${d.health.border}` }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] shrink-0" style={{ backgroundColor: d.health.color }}>
-            {d.health.icon}
+        <div className="rounded-[20px] p-5 flex gap-3.5 items-start" style={{ background: activeHealth.bg, border: `1px solid ${activeHealth.border}` }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[18px] shrink-0" style={{ backgroundColor: activeHealth.color }}>
+            {insightsLoading ? "⏳" : activeHealth.icon}
           </div>
-          <div>
-            <p className="text-[12px] font-bold mb-0.5" style={{ color: d.health.color }}>{d.health.title}</p>
-            <p className="text-[13px] leading-relaxed" style={{ color: C.g600 }} dangerouslySetInnerHTML={{ __html: d.health.body }} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-[12px] font-bold" style={{ color: activeHealth.color }}>
+                {insightsLoading ? "Analyzing health…" : activeHealth.title}
+              </p>
+              {isAiActive && !insightsLoading && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: activeHealth.color + "18", color: activeHealth.color }}>
+                  ✨ AI
+                </span>
+              )}
+            </div>
+            {insightsLoading ? (
+              <InsightSkeleton />
+            ) : (
+              <p
+                className={`text-[13px] leading-relaxed${isAiActive ? " animate-fadeIn" : ""}`}
+                style={{ color: C.g600 }}
+                dangerouslySetInnerHTML={{ __html: activeHealth.body }}
+              />
+            )}
           </div>
         </div>
       </div>
