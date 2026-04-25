@@ -252,29 +252,22 @@ function ApplySheet({
   )
 }
 
-// ─── Static analytics (deterministic from simulation data) ───────────────────
-const WEEK1 = 1201
-const WEEK2 = 1408
-const WOW_GROWTH = 17
-const TOTAL_REVENUE = 2609
-const TOTAL_TXN = 388
-const AVG_TXN = (TOTAL_REVENUE / TOTAL_TXN).toFixed(2)
-const BEST_DAY = { d: "Sat", v: 356 }
+type AiRec = {
+  recommendedPackage: string
+  tier: string
+  matchScore: number
+  scores: { A: number; B: number; track1: number; track2: number }
+  reasoning: { label: string; detail: string; icon: string }[]
+  metrics: { totalRevenue: number; totalTxn: number; wowGrowth: number; avgTxn: number; bestDay: string }
+}
 
-const AGENT_STEPS = [
-  { icon: "bar", label: "Scanned TNG merchant transaction history", detail: "388 transactions · RM 2,609 total revenue", ms: "0.3s" },
-  { icon: "trend", label: "Detected week-over-week revenue growth", detail: `Week 1 RM ${WEEK1} → Week 2 RM ${WEEK2} (+${WOW_GROWTH}%)`, ms: "0.4s" },
-  { icon: "shield", label: "Verified SSM registration status", detail: "SSM confirmed → unlocks BizCash Package B ceiling", ms: "0.2s" },
-  { icon: "bar", label: "Scored against 4 available programs", detail: "Package B: 87% · track1: 71% · Package A: 58% · track2: 44%", ms: "0.6s" },
-  { icon: "trend", label: "Validated peak-hour demand pattern", detail: "7–9 PM accounts for 63% of weekly revenue", ms: "0.3s" },
-]
-
-const SCORE_BARS = [
-  { id: "B",      label: "Package B — Growing SME",        score: 87, recommended: true },
-  { id: "track1", label: "Digital Commerce (Growth Track)", score: 71, recommended: false },
-  { id: "A",      label: "Package A — Solo Operator",       score: 58, recommended: false },
-  { id: "track2", label: "Public & Institutional",          score: 44, recommended: false },
-]
+function loadAiRec(): AiRec | null {
+  if (typeof window === "undefined") return null
+  try {
+    const s = localStorage.getItem("igrow_ai_recommendation")
+    return s ? JSON.parse(s) : null
+  } catch { return null }
+}
 
 export default function ProgramsPage() {
   const router = useRouter()
@@ -284,23 +277,30 @@ export default function ProgramsPage() {
   const [applyingProgram, setApplyingProgram] = useState<typeof PROGRAMS[0] | null>(null)
   const [prefilled, setPrefilled] = useState({ name: "My Business", category: "Food & Drinks", revenue: "2,449", txn: "318" })
   const [reportExpanded, setReportExpanded] = useState(true)
+  const [aiRec, setAiRec] = useState<AiRec | null>(null)
 
   useEffect(() => {
     setMounted(true)
-    const hasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
     const cat = localStorage.getItem("igrow_category") ?? ""
     const simCompleted = localStorage.getItem("igrow_sim_completed") === "true"
-    const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
 
-    if (simCompleted && hasSSM) {
-      const pkg = isFood ? "B" : "track2"
-      setRecommendedId(pkg)
-      setExpandedId(pkg)
+    // Load AI recommendation
+    const rec = loadAiRec()
+    setAiRec(rec)
+
+    // Determine recommended package: prefer AI result, fallback to saved tier/pkg
+    const savedPkg = localStorage.getItem("igrow_package") as string | null
+    const aiPkg = rec?.recommendedPackage ?? savedPkg
+    if (simCompleted && aiPkg) {
+      setRecommendedId(aiPkg)
+      setExpandedId(aiPkg)
     }
 
     const simCount = Number.parseInt(localStorage.getItem("igrow_dash_sim_count") ?? "0", 10)
-    const revenue = simCount >= 14 ? "2,609" : "—"
-    const txn = simCount >= 14 ? "388" : "—"
+    const revenue = rec?.metrics?.totalRevenue
+      ? Number(rec.metrics.totalRevenue).toLocaleString("en-MY", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      : simCount >= 14 ? "2,609" : "—"
+    const txn = rec?.metrics?.totalTxn ? String(rec.metrics.totalTxn) : simCount >= 14 ? "388" : "—"
     setPrefilled({ name: "My Business", category: cat || "Food & Drinks", revenue, txn })
 
     if (window.location.hash === "#recommended") {
@@ -355,7 +355,7 @@ export default function ProgramsPage() {
                   <p className="text-[13px] font-bold text-[#0D2B6E]">iGrow Analytics Engine</p>
                   <span className="text-[9px] font-bold bg-[#EEF2FB] text-[#1A5FD5] px-1.5 py-0.5 rounded-full">v2.1</span>
                 </div>
-                <p className="text-[11px] text-gray-400">Merchant profile analysis · 5 signals evaluated · 87% match</p>
+                <p className="text-[11px] text-gray-400">Merchant profile analysis · 5 signals evaluated · {aiRec?.matchScore ?? 87}% match</p>
               </div>
               <motion.div animate={{ rotate: reportExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -374,23 +374,31 @@ export default function ProgramsPage() {
                   <div className="px-4 pb-4 border-t border-[#F0F5FF]">
 
                     {/* Key metrics strip */}
-                    <div className="grid grid-cols-3 gap-2 mt-3 mb-4">
-                      {[
-                        { value: `RM ${TOTAL_REVENUE.toLocaleString()}`, label: "Revenue signal" },
-                        { value: `+${WOW_GROWTH}%`, label: "WoW growth" },
-                        { value: `RM ${AVG_TXN}`, label: "Avg per txn" },
-                      ].map(({ value, label }) => (
-                        <div key={label} className="bg-[#EEF2FB] rounded-xl px-2 py-2.5 text-center">
-                          <p className="text-[14px] font-extrabold text-[#0D2B6E] leading-tight">{value}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+                    {(() => {
+                      const m = aiRec?.metrics
+                      const totalRev = m?.totalRevenue ?? 0
+                      const wowG = m?.wowGrowth ?? 0
+                      const avgT = m?.avgTxn ?? 0
+                      return (
+                        <div className="grid grid-cols-3 gap-2 mt-3 mb-4">
+                          {[
+                            { value: totalRev ? `RM ${Number(totalRev).toLocaleString("en-MY", { maximumFractionDigits: 0 })}` : "—", label: "Revenue signal" },
+                            { value: totalRev ? `${wowG >= 0 ? "+" : ""}${Number(wowG).toFixed(1)}%` : "—", label: "MoM growth" },
+                            { value: totalRev ? `RM ${Number(avgT).toFixed(2)}` : "—", label: "Avg per txn" },
+                          ].map(({ value, label }) => (
+                            <div key={label} className="bg-[#EEF2FB] rounded-xl px-2 py-2.5 text-center">
+                              <p className="text-[14px] font-extrabold text-[#0D2B6E] leading-tight">{value}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })()}
 
                     {/* Agent reasoning steps */}
                     <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-2.5">Agent reasoning chain</p>
                     <div className="flex flex-col gap-0">
-                      {AGENT_STEPS.map((step, i) => (
+                      {(aiRec?.reasoning ?? []).map((step, i) => (
                         <div key={i} className="flex gap-3 items-start">
                           <div className="flex flex-col items-center shrink-0">
                             <div className="w-6 h-6 rounded-full flex items-center justify-center"
@@ -401,15 +409,12 @@ export default function ProgramsPage() {
                                   ? <ShieldCheck className="w-3 h-3 text-white" />
                                   : <TrendingUp className="w-3 h-3 text-white" />}
                             </div>
-                            {i < AGENT_STEPS.length - 1 && (
+                            {i < (aiRec?.reasoning ?? []).length - 1 && (
                               <div className="w-px flex-1 bg-[#E5EBF8] my-1" style={{ minHeight: 12 }} />
                             )}
                           </div>
                           <div className="pb-3 flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-[12px] font-semibold text-[#0D2B6E] leading-snug">{step.label}</p>
-                              <span className="text-[10px] text-gray-400 font-mono">{step.ms}</span>
-                            </div>
+                            <p className="text-[12px] font-semibold text-[#0D2B6E] leading-snug">{step.label}</p>
                             <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{step.detail}</p>
                           </div>
                         </div>
@@ -417,31 +422,46 @@ export default function ProgramsPage() {
                     </div>
 
                     {/* Program score comparison */}
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-2.5 mt-1">Match score — all programs</p>
-                    <div className="flex flex-col gap-2">
-                      {SCORE_BARS.map(({ id, label, score, recommended }) => (
-                        <div key={id}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-semibold text-[#0D2B6E]">{label}</span>
-                              {recommended && (
-                                <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Best match</span>
-                              )}
-                            </div>
-                            <span className="text-[11px] font-bold" style={{ color: recommended ? "#1A5FD5" : "#94a3b8" }}>{score}%</span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-[#E5EBF8] overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: recommended ? "linear-gradient(90deg, #1A5FD5, #2B7BE5)" : "#CBD5E1" }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${score}%` }}
-                              transition={{ duration: 0.7, delay: 0.1 }}
-                            />
-                          </div>
+                    {aiRec?.scores && (
+                      <>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-2.5 mt-1">Match score — all programs</p>
+                        <div className="flex flex-col gap-2">
+                          {([
+                            { id: "B",      label: "Package B — Growing SME"        },
+                            { id: "track1", label: "Digital Commerce (Growth Track)" },
+                            { id: "A",      label: "Package A — Solo Operator"       },
+                            { id: "track2", label: "Public & Institutional"          },
+                          ] as { id: keyof AiRec["scores"]; label: string }[])
+                            .sort((a, b) => (aiRec.scores[b.id] ?? 0) - (aiRec.scores[a.id] ?? 0))
+                            .map(({ id, label }) => {
+                              const score = aiRec.scores[id] ?? 0
+                              const recommended = id === aiRec.recommendedPackage
+                              return (
+                                <div key={id}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[11px] font-semibold text-[#0D2B6E]">{label}</span>
+                                      {recommended && (
+                                        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Best match</span>
+                                      )}
+                                    </div>
+                                    <span className="text-[11px] font-bold" style={{ color: recommended ? "#1A5FD5" : "#94a3b8" }}>{score}%</span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-[#E5EBF8] overflow-hidden">
+                                    <motion.div
+                                      className="h-full rounded-full"
+                                      style={{ background: recommended ? "linear-gradient(90deg, #1A5FD5, #2B7BE5)" : "#CBD5E1" }}
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${score}%` }}
+                                      transition={{ duration: 0.7, delay: 0.1 }}
+                                    />
+                                  </div>
+                                </div>
+                              )
+                            })}
                         </div>
-                      ))}
-                    </div>
+                      </>
+                    )}
 
                   </div>
                 </motion.div>

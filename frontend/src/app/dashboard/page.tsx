@@ -426,6 +426,119 @@ function LaunchpadNudgeSheet({
   )
 }
 
+// ─── Analysis progress modal ─────────────────────────────────────────
+
+const ANALYSIS_STEPS = [
+  { msg: "Scanning transaction history…",    icon: "bar"    },
+  { msg: "Detecting revenue patterns…",      icon: "trend"  },
+  { msg: "Verifying business profile…",      icon: "shield" },
+  { msg: "Scoring against programs…",        icon: "bar"    },
+  { msg: "Finalising your recommendation…",  icon: "trend"  },
+] as const
+
+function AnalysisProgressModal({ onStepsComplete }: { onStepsComplete: () => void }) {
+  const [stepIndex, setStepIndex] = useState(0)
+  const [pct, setPct] = useState(0)
+  const completedRef = useRef(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStepIndex(prev => {
+        const next = prev + 1
+        const newPct = Math.round((next / ANALYSIS_STEPS.length) * 100)
+        setPct(newPct)
+        if (next >= ANALYSIS_STEPS.length) {
+          clearInterval(interval)
+          setTimeout(() => {
+            if (!completedRef.current) {
+              completedRef.current = true
+              onStepsComplete()
+            }
+          }, 500)
+        }
+        return Math.min(next, ANALYSIS_STEPS.length - 1)
+      })
+    }, 800)
+    return () => clearInterval(interval)
+  }, [onStepsComplete])
+
+  const IconComp = ({ type }: { type: string }) => {
+    if (type === "shield") return <CheckCircle2 className="w-3 h-3 text-white" />
+    if (type === "trend")  return <TrendingUp   className="w-3 h-3 text-white" />
+    return <Loader2 className="w-3 h-3 text-white animate-spin" />
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+      <div className="w-full max-w-lg bg-white rounded-t-3xl px-5 pt-6 pb-8 shadow-2xl">
+        <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
+
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #1A5FD5 0%, #0D2B6E 100%)" }}>
+            <Loader2 className="w-5 h-5 text-white animate-spin" />
+          </div>
+          <div>
+            <p className="text-[#0D2B6E] text-[15px] font-bold leading-snug">iGrow Analytics Engine</p>
+            <p className="text-[11px] text-gray-400">Analysing your merchant profile…</p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-2 rounded-full bg-[#EEF2FB] overflow-hidden mb-4">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #1A5FD5, #2B7BE5)" }}
+          />
+        </div>
+
+        {/* Steps */}
+        <div className="flex flex-col gap-2.5">
+          {ANALYSIS_STEPS.map((step, i) => {
+            const done = i < stepIndex
+            const active = i === stepIndex
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300"
+                  style={{
+                    background: done
+                      ? "linear-gradient(135deg, #10B981, #059669)"
+                      : active
+                        ? "linear-gradient(135deg, #1A5FD5, #0D2B6E)"
+                        : "#EEF2FB",
+                  }}
+                >
+                  {done ? (
+                    <CheckCircle2 className="w-3 h-3 text-white" />
+                  ) : active ? (
+                    <IconComp type={step.icon} />
+                  ) : (
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                  )}
+                </div>
+                <span
+                  className="text-[13px] transition-all duration-300"
+                  style={{
+                    color: done ? "#10B981" : active ? "#0D2B6E" : "#94a3b8",
+                    fontWeight: active ? 600 : done ? 500 : 400,
+                  }}
+                >
+                  {step.msg}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        <p className="text-center text-[11px] text-gray-400 mt-5 leading-relaxed">
+          Powered by Claude AI · TNG iGrow Launchpad
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Report sheet ─────────────────────────────────────────────────────
 
 type SheetState = "idle" | "open"
@@ -640,6 +753,8 @@ export default function DashboardPage() {
 
   const dashSimCountRef = useRef(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const stepsCompleteRef = useRef(false)
+  const aiRecRef = useRef<Record<string, unknown> | null | undefined>(undefined)
 
   // AI insights state
   const [aiInsights, setAiInsights] = useState<Record<string, { tip: { title: string; body: string; icon: string }; health: { title: string; body: string; icon: string } }>>({})
@@ -737,29 +852,79 @@ export default function DashboardPage() {
        if (intervalRef.current) clearInterval(intervalRef.current)
        intervalRef.current = null
        setSimRunning(false)
-       setIsAnalyzing(true)
        localStorage.setItem(DASH_SIM_COMPLETED_KEY, "true")
-       setTimeout(() => {
-         setIsAnalyzing(false)
-         const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
-         if (!userHasSSM) {
-           setShowSsmNudge(true)
-           localStorage.setItem("igrow_ssm_nudge_shown", "true")
-           return
-         }
+
+       const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+       if (!userHasSSM) {
+         setIsAnalyzing(true)
+         // Still run analysis steps, then show SSM nudge
+         stepsCompleteRef.current = false
+         aiRecRef.current = undefined
+         // Fire AI in background (we won't use it for SSM path, but still run it)
          const cat = localStorage.getItem("igrow_category") ?? ""
-         const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
-         const tier: "1" | "2" = isFood ? "1" : "2"
-         const pkg: "A" | "B" | "track1" | "track2" = isFood ? "B" : "track2"
-         setRecommendedTier(tier)
-         setRecommendedPackage(pkg)
-         localStorage.setItem("igrow_tier", tier)
-         localStorage.setItem("igrow_package", pkg)
-         setShowLaunchpadNudge(true)
-         localStorage.setItem("igrow_launchpad_nudge_shown", "true")
-       }, 2500)
+         fetch(`/api/recommend-program?hasSSM=false&category=${encodeURIComponent(cat)}`)
+           .then(r => r.ok ? r.json() : null)
+           .then(data => {
+             aiRecRef.current = data ?? null
+             if (data) {
+               try { localStorage.setItem("igrow_ai_recommendation", JSON.stringify(data)) } catch { /* ignore */ }
+             }
+           })
+           .catch(() => { aiRecRef.current = null })
+         return
+       }
+
+       // SSM confirmed — show progress modal + run AI in parallel
+       setIsAnalyzing(true)
+       stepsCompleteRef.current = false
+       aiRecRef.current = undefined
+
+       const cat = localStorage.getItem("igrow_category") ?? ""
+       fetch(`/api/recommend-program?hasSSM=true&category=${encodeURIComponent(cat)}`)
+         .then(r => r.ok ? r.json() : null)
+         .then(data => {
+           aiRecRef.current = data ?? null
+           if (data) {
+             try { localStorage.setItem("igrow_ai_recommendation", JSON.stringify(data)) } catch { /* ignore */ }
+           }
+           if (stepsCompleteRef.current) finalizeRecommendation(aiRecRef.current ?? null)
+         })
+         .catch(() => {
+           aiRecRef.current = null
+           if (stepsCompleteRef.current) finalizeRecommendation(null)
+         })
      }
    }
+
+  function finalizeRecommendation(rec: Record<string, unknown> | null) {
+    setIsAnalyzing(false)
+    const cat = localStorage.getItem("igrow_category") ?? ""
+    const isFood = cat === "Food & Drinks" || cat === "Products & Goods"
+    const tier: "1" | "2" = (rec?.tier as "1" | "2") ?? (isFood ? "1" : "2")
+    const pkg: "A" | "B" | "track1" | "track2" = (rec?.recommendedPackage as "A" | "B" | "track1" | "track2") ?? (isFood ? "B" : "track2")
+    setRecommendedTier(tier)
+    setRecommendedPackage(pkg)
+    localStorage.setItem("igrow_tier", tier)
+    localStorage.setItem("igrow_package", pkg)
+    setShowLaunchpadNudge(true)
+    localStorage.setItem("igrow_launchpad_nudge_shown", "true")
+  }
+
+  function handleStepsComplete() {
+    stepsCompleteRef.current = true
+    const userHasSSM = localStorage.getItem("igrow_ssm") === "Yes, I have SSM"
+    if (!userHasSSM) {
+      setIsAnalyzing(false)
+      setShowSsmNudge(true)
+      localStorage.setItem("igrow_ssm_nudge_shown", "true")
+      return
+    }
+    // If AI already resolved (null = failed, object = success), finalize now
+    // If still undefined, the fetch callback will call finalizeRecommendation
+    if (aiRecRef.current !== undefined) {
+      finalizeRecommendation(aiRecRef.current)
+    }
+  }
 
   function handleStartDashSimulate() {
     if (simRunning || launchpadAccepted || dashSimCountRef.current >= DASH_SIM_THRESHOLD) return
@@ -917,7 +1082,8 @@ export default function DashboardPage() {
   const totalSimRevenue = DASH_SIM_DATA.reduce((a, dd) => a + dd.v, 0)
   const totalSimTxn = DASH_SIM_DATA.reduce((a, dd) => a + dd.txn, 0)
   const avgTxnValue = totalSimRevenue / totalSimTxn
-  const matchScore = Math.min(60 + (hasSSM ? 15 : 0) + (wowGrowth > 0 ? 10 : 0) + 7, 97)
+  const aiRec = (() => { try { const s = localStorage.getItem("igrow_ai_recommendation"); return s ? JSON.parse(s) : null } catch { return null } })()
+  const matchScore: number = (aiRec?.matchScore as number) ?? Math.min(60 + (hasSSM ? 15 : 0) + (wowGrowth > 0 ? 10 : 0) + 7, 97)
 
   const maxDay = Math.max(...chartDays.map(x => x.v), 1)
   const weeks = d.weeks.filter(w => w.v !== null)
@@ -1464,6 +1630,11 @@ export default function DashboardPage() {
           bestSimDay={bestSimDay}
           matchScore={matchScore}
         />
+      )}
+
+      {/* AI Analysis Progress Modal */}
+      {isAnalyzing && (
+        <AnalysisProgressModal onStepsComplete={handleStepsComplete} />
       )}
 
       {/* SSM Nudge */}
