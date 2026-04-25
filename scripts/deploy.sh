@@ -12,6 +12,14 @@ BUN_INSTALL_ARGS="${BUN_INSTALL_ARGS:---frozen-lockfile}"
 PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.org/simple/}"
 LOCK_FILE="${LOCK_FILE:-/tmp/igrow-deploy.lock}"
 
+export PATH="$HOME/.bun/bin:/root/.bun/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$HOME/.nvm/nvm.sh"
+  nvm use --silent default >/dev/null 2>&1 || true
+fi
+
 log() {
   printf '\n=== %s ===\n' "$1"
 }
