@@ -16,6 +16,7 @@ import random
 import uuid
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from urllib.parse import unquote, urlparse
 
 import pymysql
 from dotenv import load_dotenv
@@ -27,16 +28,15 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:password@localhost:3306/brisval_db",
 )
 
-# Parse mysql+pymysql://user:pass@host:port/dbname
-url = DATABASE_URL.removeprefix("mysql+pymysql://")
-userpass, rest = url.split("@", 1)
-user, password = userpass.split(":", 1)
-hostport, dbname = rest.split("/", 1)
-if ":" in hostport:
-    host, port_str = hostport.rsplit(":", 1)
-    port = int(port_str)
-else:
-    host, port = hostport, 3306
+parsed_url = urlparse(DATABASE_URL)
+user = unquote(parsed_url.username or "")
+password = unquote(parsed_url.password or "")
+host = parsed_url.hostname or "localhost"
+port = parsed_url.port or 3306
+dbname = unquote(parsed_url.path.lstrip("/"))
+
+if not user or not dbname:
+    raise ValueError("DATABASE_URL must include a username and database name")
 
 ACCOUNT_ID = "a-001"
 CAT_FOOD = "c-010"

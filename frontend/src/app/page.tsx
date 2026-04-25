@@ -27,6 +27,7 @@ type StoredHomeSimTransaction = {
 const HOME_SIM_COUNT_KEY = 'igrow_home_sim_count'
 const HOME_SIM_TOTAL_KEY = 'igrow_home_sim_total'
 const HOME_SIM_TXNS_KEY = 'igrow_home_sim_transactions'
+const BIZ_DETECTION_KEY = 'igrow_biz_detection'
 
 const DB_BASE_BALANCE = 103164.10
 
@@ -113,11 +114,13 @@ function TransactionCard({ tx, isNew }: { tx: Transaction; isNew?: boolean }) {
   )
 }
 
-function ConsentSheet({ onClose, onAccept, simCount, simTotal }: {
+function ConsentSheet({ onClose, onAccept, simCount, simTotal, aiSummary, aiLoading }: {
   onClose: () => void
   onAccept: () => void
   simCount: number
   simTotal: number
+  aiSummary: string | null
+  aiLoading: boolean
 }) {
   return (
     <div
@@ -139,10 +142,25 @@ function ConsentSheet({ onClose, onAccept, simCount, simTotal }: {
         <h2 className="text-[#0D2B6E] text-[18px] font-bold leading-snug mb-2">
           We noticed business activity
         </h2>
-        <p className="text-gray-500 text-[14px] leading-relaxed mb-1">
-          We detected <span className="font-semibold text-[#0D2B6E]">{simCount} incoming payments</span> totalling{' '}
-          <span className="font-semibold text-[#0D2B6E]">RM {simTotal.toFixed(2)}</span> that look like business activity.
-        </p>
+
+        {/* AI analysis callout */}
+        <div className="bg-[#EEF2FB] rounded-2xl px-4 py-3 mb-4 flex items-start gap-2.5">
+          <span className="text-[16px] shrink-0 mt-0.5">🤖</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[#0D2B6E] text-[11px] font-bold uppercase tracking-wide mb-1">AI Pattern Analysis</p>
+            {aiLoading ? (
+              <div className="flex items-center gap-2">
+                <span className="animate-pulse text-[#1A5FD5] text-[12px]">●</span>
+                <span className="text-gray-400 text-[13px]">Analysing your transaction history…</span>
+              </div>
+            ) : (
+              <p className="text-gray-600 text-[13px] leading-relaxed">
+                {aiSummary ?? `We detected ${simCount} incoming payments totalling RM ${simTotal.toFixed(2)} that match business activity patterns.`}
+              </p>
+            )}
+          </div>
+        </div>
+
         <p className="text-gray-500 text-[14px] leading-relaxed mb-4">
           Open a <span className="font-semibold text-[#0D2B6E]">TNG Business Account</span> to separate your business income, accept QR payments, and track your sales.
         </p>
@@ -196,6 +214,8 @@ export default function HomePage() {
   const [dbBaseBalance, setDbBaseBalance] = useState(DB_BASE_BALANCE)
   const [balance, setBalance] = useState(DB_BASE_BALANCE)
   const [bizStats, setBizStats] = useState<BizStats>(DEFAULT_BIZ_STATS)
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
   const [simCount, setSimCount] = useState(0)
   const [simTotal, setSimTotal] = useState(0)
   const [simRunning, setSimRunning] = useState(false)
@@ -232,6 +252,12 @@ export default function HomePage() {
     setSimTotal(simTotalValue)
     setTodayTxns([...savedTransactions.map(mapStoredHomeSimTransaction), ...initialTodayTransactions])
     setDetectionBannerVisible(!onboarded && simCountValue >= SIM_THRESHOLD)
+
+    // Load cached AI detection result
+    try {
+      const cached = localStorage.getItem(BIZ_DETECTION_KEY)
+      if (cached) setAiSummary(JSON.parse(cached))
+    } catch { /* ignore */ }
 
     // Fetch real balance from DB, overlay simulation delta on top
     fetch('/api/account')
@@ -302,11 +328,24 @@ export default function HomePage() {
     localStorage.setItem(HOME_SIM_TXNS_KEY, JSON.stringify(simTransactionsRef.current))
 
     if (nextCount >= SIM_THRESHOLD) {
-      // Stop the interval
       if (intervalRef.current) clearInterval(intervalRef.current)
       intervalRef.current = null
       setSimRunning(false)
       setDetectionBannerVisible(true)
+
+      // Fire AI detection in parallel — result lands before or just after modal opens
+      setAiLoading(true)
+      fetch('/api/detect-business')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.summary) {
+            setAiSummary(data.summary)
+            try { localStorage.setItem(BIZ_DETECTION_KEY, JSON.stringify(data.summary)) } catch { /* ignore */ }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setAiLoading(false))
+
       setTimeout(() => setShowConsent(true), 1000)
     }
   }
@@ -458,6 +497,8 @@ export default function HomePage() {
           onAccept={handleAccept}
           simCount={simCount}
           simTotal={simTotal}
+          aiSummary={aiSummary}
+          aiLoading={aiLoading}
         />
       )}
 
@@ -468,7 +509,7 @@ export default function HomePage() {
             'igrow_onboarded', 'igrow_category', 'igrow_sell_mode', 'igrow_ssm', 'igrow_qr_generated',
             'igrow_tier', 'igrow_package', 'igrow_dash_sim_count', 'igrow_launchpad_accepted',
             'igrow_sim_completed', 'igrow_ssm_nudge_shown', 'igrow_launchpad_nudge_shown',
-            HOME_SIM_COUNT_KEY, HOME_SIM_TOTAL_KEY, HOME_SIM_TXNS_KEY,
+            HOME_SIM_COUNT_KEY, HOME_SIM_TOTAL_KEY, HOME_SIM_TXNS_KEY, BIZ_DETECTION_KEY,
           ].forEach(k => localStorage.removeItem(k))
           window.location.reload()
         }}
