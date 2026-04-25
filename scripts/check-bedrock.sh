@@ -22,7 +22,6 @@ fi
 
 REGION="${AWS_REGION:-ap-southeast-1}"
 MODEL="anthropic.claude-haiku-4-5-20251001-v1:0"
-ENDPOINT="https://bedrock-runtime.${REGION}.amazonaws.com/model/${MODEL}/converse"
 
 echo "──────────────────────────────────────────"
 echo " iGrow Bedrock health check"
@@ -34,38 +33,89 @@ if [[ -n "${AWS_SESSION_TOKEN:-}" ]]; then
 fi
 echo "──────────────────────────────────────────"
 
-# Build a minimal Converse request body
-BODY='{"messages":[{"role":"user","content":[{"text":"ping"}]}],"inferenceConfig":{"maxTokens":10}}'
+# Use Python for SigV4 signing — works on any Python 3.6+ without extra deps
+python3 - <<PYEOF
+import os, sys, json, hashlib, hmac, datetime
+try:
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError
+except ImportError:
+    print("❌  Python 3 required")
+    sys.exit(1)
 
-# Sign + send with curl using AWS SigV4
-# Requires: curl with --aws-sigv4 support (curl ≥ 7.75, standard on macOS 13+)
-HTTP_STATUS=$(curl -s -o /tmp/bedrock_check_response.json -w "%{http_code}" \
-  --request POST "$ENDPOINT" \
-  --header "Content-Type: application/json" \
-  --header "Accept: application/json" \
-  --user "${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}" \
-  --aws-sigv4 "aws:amz:${REGION}:bedrock" \
-  ${AWS_SESSION_TOKEN:+--header "X-Amz-Security-Token: ${AWS_SESSION_TOKEN}"} \
-  --data "$BODY" \
-  --max-time 15)
+key_id     = os.environ["AWS_ACCESS_KEY_ID"]
+secret     = os.environ["AWS_SECRET_ACCESS_KEY"]
+token      = os.environ.get("AWS_SESSION_TOKEN", "")
+region     = os.environ.get("AWS_REGION", "ap-southeast-1")
+model      = "anthropic.claude-haiku-4-5-20251001-v1:0"
+host       = f"bedrock-runtime.{region}.amazonaws.com"
+endpoint   = f"https://{host}/model/{model.replace(':', '%3A')}/converse"
+service    = "bedrock"
+body       = json.dumps({"messages":[{"role":"user","content":[{"text":"ping"}]}],"inferenceConfig":{"maxTokens":10}}).encode()
 
-RESPONSE=$(cat /tmp/bedrock_check_response.json)
+def sign(key, msg):
+    return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
-if [[ "$HTTP_STATUS" == "200" ]]; then
-  echo "✅  Bedrock OK (HTTP 200)"
-  echo "   Response: $(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['output']['message']['content'][0]['text'])" 2>/dev/null || echo "$RESPONSE")"
-elif [[ "$HTTP_STATUS" == "403" ]]; then
-  echo "❌  Auth failed (HTTP 403) — credentials are expired or invalid"
-  echo "   $(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('message',''))" 2>/dev/null || echo "$RESPONSE")"
-  echo ""
-  echo "   → Refresh your AWS STS credentials in $ENV_FILE"
-  exit 1
-elif [[ "$HTTP_STATUS" == "400" ]]; then
-  echo "⚠️   Bad request (HTTP 400) — creds OK but request issue"
-  echo "   $RESPONSE"
-  exit 1
-else
-  echo "❌  Unexpected HTTP $HTTP_STATUS"
-  echo "   $RESPONSE"
-  exit 1
-fi
+def get_sig_key(secret_key, date_stamp, region_name, service_name):
+    k = sign(("AWS4" + secret_key).encode("utf-8"), date_stamp)
+    k = sign(k, region_name)
+    k = sign(k, service_name)
+    return sign(k, "aws4_request")
+
+now        = datetime.datetime.utcnow()
+amz_date   = now.strftime("%Y%m%dT%H%M%SZ")
+date_stamp = now.strftime("%Y%m%d")
+
+payload_hash = hashlib.sha256(body).hexdigest()
+canonical_uri = f"/model/{model.replace(':', '%3A')}/converse"
+canonical_qs  = ""
+headers_dict  = {
+    "content-type": "application/json",
+    "host": host,
+    "x-amz-date": amz_date,
+    "x-amz-content-sha256": payload_hash,
+}
+if token:
+    headers_dict["x-amz-security-token"] = token
+
+signed_headers = ";".join(sorted(headers_dict))
+canonical_headers = "".join(f"{k}:{v}\n" for k, v in sorted(headers_dict.items()))
+canonical_request = "\n".join(["POST", canonical_uri, canonical_qs, canonical_headers, signed_headers, payload_hash])
+
+cred_scope     = f"{date_stamp}/{region}/{service}/aws4_request"
+string_to_sign = "\n".join(["AWS4-HMAC-SHA256", amz_date, cred_scope, hashlib.sha256(canonical_request.encode()).hexdigest()])
+sig_key        = get_sig_key(secret, date_stamp, region, service)
+signature      = hmac.new(sig_key, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+auth_header    = (f"AWS4-HMAC-SHA256 Credential={key_id}/{cred_scope}, "
+                  f"SignedHeaders={signed_headers}, Signature={signature}")
+
+req_headers = {k: v for k, v in headers_dict.items() if k != "host"}
+req_headers["Authorization"] = auth_header
+
+req = Request(endpoint, data=body, headers=req_headers, method="POST")
+try:
+    with urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read())
+        reply = data["output"]["message"]["content"][0]["text"]
+        print(f"✅  Bedrock OK (HTTP 200) — model replied: {reply!r}")
+        sys.exit(0)
+except HTTPError as e:
+    body_text = e.read().decode("utf-8", errors="replace")
+    try:
+        msg = json.loads(body_text).get("message", body_text)
+    except Exception:
+        msg = body_text[:200]
+    if e.code == 403:
+        print(f"❌  Auth failed (HTTP 403) — credentials are expired or invalid")
+        print(f"   {msg}")
+        print()
+        print("   → Refresh your AWS STS credentials in frontend/.env.local (local)")
+        print("     or update AWS_* env vars in your systemd/PM2 config (prod)")
+        sys.exit(1)
+    else:
+        print(f"❌  HTTP {e.code}: {msg}")
+        sys.exit(1)
+except Exception as ex:
+    print(f"❌  Request failed: {ex}")
+    sys.exit(1)
+PYEOF
