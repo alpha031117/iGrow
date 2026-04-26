@@ -14,23 +14,32 @@ const Tooltip = TooltipPrimitive.Root;
 const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & { showArrow?: boolean }
->(({ className, sideOffset = 4, showArrow = false, children, ...props }, ref) => (
-  <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "relative z-50 max-w-[280px] rounded-md bg-popover text-popover-foreground px-1.5 py-1 text-xs animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      {showArrow && <TooltipPrimitive.Arrow className="-my-px fill-popover" />}
-    </TooltipPrimitive.Content>
-  </TooltipPrimitive.Portal>
-));
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {
+    showArrow?: boolean;
+  }
+>(
+  (
+    { className, sideOffset = 4, showArrow = false, children, ...props },
+    ref,
+  ) => (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+          "relative z-50 max-w-[280px] rounded-md bg-popover text-popover-foreground px-1.5 py-1 text-xs animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        {showArrow && (
+          <TooltipPrimitive.Arrow className="-my-px fill-popover" />
+        )}
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  ),
+);
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 const Popover = PopoverPrimitive.Root;
@@ -46,7 +55,7 @@ const PopoverContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         "z-50 w-64 rounded-xl bg-popover dark:bg-[#303030] p-2 text-popover-foreground dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
+        className,
       )}
       {...props}
     />
@@ -64,7 +73,7 @@ const DialogOverlay = React.forwardRef<
     ref={ref}
     className={cn(
       "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className
+      className,
     )}
     {...props}
   />
@@ -81,7 +90,7 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        className
+        className,
       )}
       {...props}
     >
@@ -99,69 +108,216 @@ DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // --- Icons ---
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <path d="M12 5V19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <path
+      d="M12 5V19"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M5 12H19"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 const Settings2Icon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M20 7h-9" /><path d="M14 17H5" />
-    <circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M20 7h-9" />
+    <path d="M14 17H5" />
+    <circle cx="17" cy="17" r="3" />
+    <circle cx="7" cy="7" r="3" />
   </svg>
 );
 const SendIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <path d="M12 5.25L12 18.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M18.75 12L12 5.25L5.25 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <path
+      d="M12 5.25L12 18.75"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M18.75 12L12 5.25L5.25 12"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 const StopIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <rect x="6" y="6" width="12" height="12" rx="2" />
   </svg>
 );
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 const MicIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" y1="19" x2="12" y2="23" />
   </svg>
 );
 const GlobeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <circle cx="12" cy="12" r="10" /><path d="M2 12h20" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20" />
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
 const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <path d="m15 5 4 4" />
   </svg>
 );
 const TrendingUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+    <polyline points="17 6 23 6 23 12" />
   </svg>
 );
 const LightbulbIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" {...props}>
-    <path d="M12 7C9.23858 7 7 9.23858 7 12C7 13.3613 7.54402 14.5955 8.42651 15.4972C8.77025 15.8484 9.05281 16.2663 9.14923 16.7482L9.67833 19.3924C9.86537 20.3272 10.6862 21 11.6395 21H12.3605C13.3138 21 14.1346 20.3272 14.3217 19.3924L14.8508 16.7482C14.9472 16.2663 15.2297 15.8484 15.5735 15.4972C16.456 14.5955 17 13.3613 17 12C17 9.23858 14.7614 7 12 7Z" stroke="currentColor" strokeWidth="2" />
-    <path d="M12 4V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M10 17H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M12 7C9.23858 7 7 9.23858 7 12C7 13.3613 7.54402 14.5955 8.42651 15.4972C8.77025 15.8484 9.05281 16.2663 9.14923 16.7482L9.67833 19.3924C9.86537 20.3272 10.6862 21 11.6395 21H12.3605C13.3138 21 14.1346 20.3272 14.3217 19.3924L14.8508 16.7482C14.9472 16.2663 15.2297 15.8484 15.5735 15.4972C16.456 14.5955 17 13.3613 17 12C17 9.23858 14.7614 7 12 7Z"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <path
+      d="M12 4V3"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10 17H14"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
 const toolsList = [
-  { id: "searchWeb", name: "Search the web", shortName: "Search", icon: GlobeIcon },
-  { id: "writeCode", name: "Write or summarize", shortName: "Write", icon: PencilIcon },
-  { id: "thinkLonger", name: "Think for longer", shortName: "Think", icon: LightbulbIcon },
-  { id: "analyze", name: "Analyze data", shortName: "Analyze", icon: TrendingUpIcon },
+  {
+    id: "searchWeb",
+    name: "Search the web",
+    shortName: "Search",
+    icon: GlobeIcon,
+  },
+  {
+    id: "writeCode",
+    name: "Write or summarize",
+    shortName: "Write",
+    icon: PencilIcon,
+  },
+  {
+    id: "thinkLonger",
+    name: "Think for longer",
+    shortName: "Think",
+    icon: LightbulbIcon,
+  },
+  {
+    id: "analyze",
+    name: "Analyze data",
+    shortName: "Analyze",
+    icon: TrendingUpIcon,
+  },
 ];
 
 // --- PromptBox ---
@@ -181,14 +337,35 @@ export type PromptBoxProps = {
 };
 
 const FileIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
   </svg>
 );
 
 export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
-  ({ value: valueProp, onValueChange, onSubmit, isLoading = false, className, attachment, onAttachmentChange }, ref) => {
+  (
+    {
+      value: valueProp,
+      onValueChange,
+      onSubmit,
+      isLoading = false,
+      className,
+      attachment,
+      onAttachmentChange,
+    },
+    ref,
+  ) => {
     const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -237,7 +414,8 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
       if (!file) return;
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onloadend = () => onAttachmentChange?.({ file, previewUrl: reader.result as string });
+        reader.onloadend = () =>
+          onAttachmentChange?.({ file, previewUrl: reader.result as string });
         reader.readAsDataURL(file);
       } else {
         onAttachmentChange?.({ file });
@@ -252,7 +430,9 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
     };
 
     const hasValue = value.trim().length > 0 || !!attachment;
-    const activeTool = selectedTool ? toolsList.find((t) => t.id === selectedTool) : null;
+    const activeTool = selectedTool
+      ? toolsList.find((t) => t.id === selectedTool)
+      : null;
     const ActiveToolIcon = activeTool?.icon;
     const isImage = attachment?.file.type.startsWith("image/");
 
@@ -260,7 +440,7 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
       <div
         className={cn(
           "flex flex-col rounded-[28px] p-2 shadow-sm transition-colors bg-white border border-zinc-200 dark:bg-[#303030] dark:border-transparent cursor-text",
-          className
+          className,
         )}
       >
         <input
@@ -274,12 +454,27 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
         {attachment && (
           <div className="relative mb-1 w-fit px-1 pt-1">
             {isImage && attachment.previewUrl ? (
-              <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-                <button type="button" onClick={() => setIsImageDialogOpen(true)} className="block">
-                  <img src={attachment.previewUrl} alt="Preview" className="h-14 w-14 rounded-[1rem] object-cover" />
+              <Dialog
+                open={isImageDialogOpen}
+                onOpenChange={setIsImageDialogOpen}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsImageDialogOpen(true)}
+                  className="block"
+                >
+                  <img
+                    src={attachment.previewUrl}
+                    alt="Preview"
+                    className="h-14 w-14 rounded-[1rem] object-cover"
+                  />
                 </button>
                 <DialogContent>
-                  <img src={attachment.previewUrl} alt="Full size preview" className="w-full max-h-[95vh] object-contain rounded-[24px]" />
+                  <img
+                    src={attachment.previewUrl}
+                    alt="Full size preview"
+                    className="w-full max-h-[95vh] object-contain rounded-[24px]"
+                  />
                 </DialogContent>
               </Dialog>
             ) : (
@@ -305,7 +500,7 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Message AlphaGo..."
+          placeholder="Message AlphaGrow..."
           className="w-full resize-none border-0 bg-transparent p-3 text-foreground dark:text-white placeholder:text-muted-foreground dark:placeholder:text-gray-400 focus:ring-0 focus-visible:outline-none min-h-[48px]"
         />
 
@@ -323,7 +518,9 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
                     <span className="sr-only">Attach image</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" showArrow><p>Attach image</p></TooltipContent>
+                <TooltipContent side="top" showArrow>
+                  <p>Attach image</p>
+                </TooltipContent>
               </Tooltip>
 
               <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -339,14 +536,19 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="top" showArrow><p>Explore Tools</p></TooltipContent>
+                  <TooltipContent side="top" showArrow>
+                    <p>Explore Tools</p>
+                  </TooltipContent>
                 </Tooltip>
                 <PopoverContent side="top" align="start">
                   <div className="flex flex-col gap-1">
                     {toolsList.map((tool) => (
                       <button
                         key={tool.id}
-                        onClick={() => { setSelectedTool(tool.id); setIsPopoverOpen(false); }}
+                        onClick={() => {
+                          setSelectedTool(tool.id);
+                          setIsPopoverOpen(false);
+                        }}
                         className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm hover:bg-accent dark:hover:bg-[#515151]"
                       >
                         <tool.icon className="h-4 w-4" />
@@ -382,7 +584,9 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
                       <span className="sr-only">Record voice</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" showArrow><p>Record voice</p></TooltipContent>
+                  <TooltipContent side="top" showArrow>
+                    <p>Record voice</p>
+                  </TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
@@ -393,8 +597,14 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
                       disabled={!hasValue && !isLoading}
                       className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-white/80 disabled:opacity-30"
                     >
-                      {isLoading ? <StopIcon className="h-4 w-4" /> : <SendIcon className="h-5 w-5" />}
-                      <span className="sr-only">{isLoading ? "Stop" : "Send"}</span>
+                      {isLoading ? (
+                        <StopIcon className="h-4 w-4" />
+                      ) : (
+                        <SendIcon className="h-5 w-5" />
+                      )}
+                      <span className="sr-only">
+                        {isLoading ? "Stop" : "Send"}
+                      </span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" showArrow>
@@ -407,6 +617,6 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 PromptBox.displayName = "PromptBox";
