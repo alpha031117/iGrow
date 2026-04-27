@@ -545,16 +545,25 @@ export default function HomePage() {
         {isOnboarded && (
           <button
             onClick={() => router.push("/dashboard")}
-            className="w-full bg-white rounded-3xl shadow-md overflow-hidden text-left active:scale-[.98] transition-transform duration-150"
+            className="w-full bg-white rounded-3xl shadow-md overflow-hidden text-left active:scale-[.98] transition-transform duration-150 animate-slide-up-fade"
+            style={{
+              outline: "2px solid transparent",
+              boxShadow: "0 0 0 2px rgba(26,95,213,0.12), 0 4px 16px rgba(26,95,213,0.08)",
+            }}
           >
             <div className="px-5 py-4 flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 relative"
                 style={{
                   background: "linear-gradient(135deg,#1A5FD5,#0D2B6E)",
                 }}
               >
-                <BarChart3 className="w-5 h-5 text-white" />
+                {/* Subtle ping ring on the icon */}
+                <span
+                  className="absolute inset-0 rounded-2xl animate-ping opacity-20"
+                  style={{ backgroundColor: "#1A5FD5" }}
+                />
+                <BarChart3 className="w-5 h-5 text-white relative z-10" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[#0D2B6E] text-[14px] font-bold leading-snug">
@@ -599,7 +608,11 @@ export default function HomePage() {
                   <button
                     onClick={handleStartSimulate}
                     disabled={simRunning || simCount >= SIM_THRESHOLD}
-                    className="rounded-full px-3 py-1 text-[12px] font-bold text-white bg-[#10B981] active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5"
+                    className={`rounded-full px-3 py-1 text-[12px] font-bold text-white bg-[#10B981] active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5${
+                      !simRunning && simCount < SIM_THRESHOLD
+                        ? " animate-pulse-glow"
+                        : ""
+                    }`}
                   >
                     {simRunning ? (
                       <>
@@ -611,7 +624,7 @@ export default function HomePage() {
                       "▶ Simulate"
                     )}
                   </button>
-                  <span className="text-[10px] text-[#9CA3AF] leading-tight text-right">
+                  <span className="text-[10px] text-[#9CA3AF] leading-tight text-right animate-hint-float">
                     Simulates daily transactions
                   </span>
                 </>
