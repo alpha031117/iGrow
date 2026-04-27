@@ -593,23 +593,28 @@ export default function HomePage() {
             <span className="text-[#0D2B6E] text-[15px] font-bold">
               Transaction History
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-1">
               {!isOnboarded && (
-                <button
-                  onClick={handleStartSimulate}
-                  disabled={simRunning || simCount >= SIM_THRESHOLD}
-                  className="rounded-full px-3 py-1 text-[12px] font-bold text-white bg-[#10B981] active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5"
-                >
-                  {simRunning ? (
-                    <>
-                      <span className="animate-pulse">●</span> Simulating…
-                    </>
-                  ) : simCount >= SIM_THRESHOLD ? (
-                    "Done ✓"
-                  ) : (
-                    "▶ Simulate"
-                  )}
-                </button>
+                <>
+                  <button
+                    onClick={handleStartSimulate}
+                    disabled={simRunning || simCount >= SIM_THRESHOLD}
+                    className="rounded-full px-3 py-1 text-[12px] font-bold text-white bg-[#10B981] active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5"
+                  >
+                    {simRunning ? (
+                      <>
+                        <span className="animate-pulse">●</span> Simulating…
+                      </>
+                    ) : simCount >= SIM_THRESHOLD ? (
+                      "Done ✓"
+                    ) : (
+                      "▶ Simulate"
+                    )}
+                  </button>
+                  <span className="text-[10px] text-[#9CA3AF] leading-tight text-right">
+                    Simulates daily transactions
+                  </span>
+                </>
               )}
             </div>
           </div>
@@ -655,7 +660,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* Hidden demo reset — bottom-right corner */}
+      {/* Demo reset button — bottom-right corner */}
       <button
         onClick={() => {
           [
@@ -678,10 +683,11 @@ export default function HomePage() {
           ].forEach((k) => localStorage.removeItem(k));
           window.location.reload();
         }}
-        className="fixed bottom-4 right-4 w-4 h-4 rounded-full opacity-5 hover:opacity-25 transition-opacity"
+        className="fixed bottom-4 right-4 rounded-full px-3 py-1.5 text-[11px] font-semibold text-white opacity-60 hover:opacity-100 transition-opacity shadow-md"
         style={{ backgroundColor: "#0D2B6E" }}
-        aria-hidden="true"
-      />
+      >
+        Click here to reset
+      </button>
     </div>
   );
 }

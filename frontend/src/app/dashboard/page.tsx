@@ -870,7 +870,7 @@ function phBarColor(pct: number) {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="text-[11px] font-bold uppercase tracking-[.7px] px-6 pb-2.5 pt-1"
+      className="text-[11px] font-bold uppercase tracking-[.7px] px-0 pb-2.5 pt-1"
       style={{ color: C.g400 }}
     >
       {children}
@@ -890,7 +890,7 @@ function Card({
   return (
     <div
       id={id}
-      className={`bg-white rounded-[20px] p-5 mx-5 mb-4 shadow-sm ${className ?? ""}`}
+      className={`bg-white rounded-[20px] p-5 mb-4 shadow-sm ${className ?? ""}`}
     >
       {children}
     </div>
@@ -1586,7 +1586,7 @@ function ReportSheet({
         onClick={onClose}
       />
       <div
-        className="fixed bottom-0 left-1/2 w-full max-w-[430px] bg-white rounded-t-3xl px-6 pt-5 pb-9 z-50 transition-transform duration-300"
+        className="fixed bottom-0 left-1/2 w-full max-w-lg bg-white rounded-t-3xl px-6 pt-5 pb-9 z-50 transition-transform duration-300"
         style={{
           transform: `translateX(-50%) translateY(${open ? "0" : "100%"})`,
         }}
@@ -2157,8 +2157,6 @@ export default function DashboardPage() {
       style={{
         backgroundColor: C.g50,
         fontFamily: "Inter, sans-serif",
-        maxWidth: 430,
-        margin: "0 auto",
       }}
     >
       {/* Header */}
@@ -2174,7 +2172,7 @@ export default function DashboardPage() {
           className="absolute -left-5 -bottom-8 w-24 h-24 rounded-full"
           style={{ background: "rgba(255,255,255,.04)" }}
         />
-        <div className="relative z-10 flex justify-between items-start">
+        <div className="relative z-10 max-w-2xl mx-auto flex justify-between items-start">
           <div>
             <button
               onClick={() => router.push("/")}
@@ -2215,8 +2213,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Content wrapper */}
+      <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+
       {/* Tab bar */}
-      <div className="mx-5 mt-4 bg-white rounded-2xl p-1.5 flex relative shadow-sm">
+      <div className="mt-4 bg-white rounded-2xl p-1.5 flex relative shadow-sm">
         <div
           className="absolute top-1.5 h-[calc(100%-12px)] w-[calc(50%-6px)] rounded-xl transition-transform duration-300"
           style={{
@@ -2241,7 +2242,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Sub filters */}
-      <div className="flex gap-2 px-5 pt-3 items-center">
+      <div className="flex gap-2 pt-3 items-center">
         {subFilters.map((f) => (
           <button
             key={f.key}
@@ -2275,7 +2276,7 @@ export default function DashboardPage() {
 
       {/* Custom range picker */}
       {showCustom && (
-        <div className="mx-5 mt-2.5 bg-white rounded-2xl p-4 shadow-sm">
+        <div className="mt-2.5 bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex gap-2.5 mb-3">
             <div className="flex-1">
               <label
@@ -2555,7 +2556,7 @@ export default function DashboardPage() {
         })()}
 
       {/* ── Hero metrics ── */}
-      <div className="grid grid-cols-2 gap-3 px-5 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="bg-white rounded-[20px] p-5 shadow-sm relative overflow-hidden">
           <div
             className="absolute top-0 right-0 w-14 h-14 rounded-bl-[60px]"
@@ -2686,7 +2687,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* ── Bar chart ── */}
-      <div className="px-6 pb-2.5 pt-1">
+      <div className="pb-2.5 pt-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <p
@@ -2784,7 +2785,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* ── Peak hours ── */}
-      <div className="flex items-center justify-between px-6 pb-2.5 pt-1">
+      <div className="flex items-center justify-between pb-2.5 pt-1">
         <p
           className="text-[11px] font-bold uppercase tracking-[.7px]"
           style={{ color: C.g400 }}
@@ -2862,7 +2863,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* ── Tip card ── */}
-      <div className="mx-5 mb-4">
+      <div className="mb-4">
         <div
           className="rounded-[20px] p-5 flex gap-3.5 items-start"
           style={{
@@ -3019,7 +3020,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Health card ── */}
-      <div className="mx-5 mb-4">
+      <div className="mb-4">
         <div
           className="rounded-[20px] p-5 flex gap-3.5 items-start"
           style={{
@@ -3072,6 +3073,8 @@ export default function DashboardPage() {
       >
         AlphaGrow · Powered by TNG
       </p>
+
+      </div>{/* end content wrapper */}
 
       {/* Report sheet */}
       <ReportSheet
