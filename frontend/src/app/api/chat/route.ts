@@ -37,23 +37,32 @@ export async function POST(request: Request) {
 
   const model = MODELS[modelId] ?? MODELS.haiku;
 
-  const eventStream = stream(
-    model,
-    { systemPrompt, messages },
-    { region: "ap-southeast-1" }
-  );
+  const FALLBACK_MESSAGE =
+    "I'm having a little trouble connecting right now. Please try again in a moment — I'm here to help you grow your business with TNG! 🙏";
 
   const readable = new ReadableStream({
     async start(controller) {
+      const enqueue = (text: string) =>
+        controller.enqueue(new TextEncoder().encode(text));
+
       try {
+        const eventStream = stream(
+          model,
+          { systemPrompt, messages },
+          { region: "ap-southeast-1" },
+        );
+
         for await (const event of eventStream) {
           if (event.type === "text_delta") {
-            controller.enqueue(new TextEncoder().encode(event.delta));
+            enqueue(event.delta as string);
           }
           if (event.type === "error") {
-            const errMsg = event.error.errorMessage ?? "Unknown error";
+            const errMsg =
+              (event.error as { errorMessage?: string })?.errorMessage ??
+              "Unknown Bedrock error";
             console.error("[chat] stream error:", errMsg, event.error);
-            controller.enqueue(new TextEncoder().encode(`\n\n[Error: ${errMsg}]`));
+            // Emit a user-friendly fallback instead of the raw error string
+            enqueue(FALLBACK_MESSAGE);
             controller.close();
             return;
           }
@@ -65,7 +74,8 @@ export async function POST(request: Request) {
         controller.close();
       } catch (err) {
         console.error("[chat] caught error:", err);
-        controller.enqueue(new TextEncoder().encode(`\n\n[Error: ${String(err)}]`));
+        // Emit a user-friendly fallback instead of the raw stack trace
+        enqueue(FALLBACK_MESSAGE);
         controller.close();
       }
     },

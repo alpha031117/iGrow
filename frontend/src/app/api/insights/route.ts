@@ -92,8 +92,12 @@ async function collectStream(
 }
 
 export async function POST(request: Request) {
+  // Hoist payload so the catch block can build a data-driven fallback
+  // even if the Bedrock stream fails after parsing.
+  let payload: InsightPayload | null = null;
+
   try {
-    const payload: InsightPayload = await request.json();
+    payload = (await request.json()) as InsightPayload;
 
     const eventStream = stream(
       HAIKU,
@@ -125,7 +129,37 @@ export async function POST(request: Request) {
 
     return Response.json(parsed);
   } catch (err) {
-    console.error("[insights]", err);
-    return Response.json({ error: String(err) }, { status: 500 });
+    console.error("[insights] Bedrock unavailable, using static fallback:", err);
+
+    // Build a data-driven fallback using whatever we parsed from the request.
+    // Falls back to generic copy if payload never parsed.
+    const p = payload;
+    const trend = p
+      ? p.vsPrev >= 0
+        ? `up <strong>${p.vsPrev}%</strong> vs the previous period`
+        : `down <strong>${Math.abs(p.vsPrev)}%</strong> vs the previous period`
+      : null;
+    const peakHour = p?.peakHour ?? "peak hours";
+    const bestDay = p?.bestDay?.replace(/\s*—.*$/, "") ?? "your best day";
+    const sales = p ? `RM ${Number(p.heroSales).toLocaleString("en-MY")}` : null;
+
+    const fallback: InsightsResponse = {
+      tip: {
+        icon: "💡",
+        title: "Smart Insight",
+        body: sales
+          ? `You earned <strong>${sales}</strong> this period. <strong>${bestDay}</strong> was your strongest day — consider stocking up or running a promo that day. Your <strong>${peakHour}</strong> window brings in the most customers.`
+          : "Focus on your <strong>peak trading hours</strong> to maximise daily revenue and keep your best customers coming back.",
+      },
+      health: {
+        icon: trend ? (p!.vsPrev >= 0 ? "🌱" : "💪") : "🌱",
+        title: trend ? (p!.vsPrev >= 0 ? "Growing Steady" : "Keep Going") : "Steady Progress",
+        body: trend
+          ? `Sales are ${trend}. ${p!.vsPrev >= 0 ? "Keep this pace going — consistency builds your financing readiness score." : "A small dip is normal. Focus on your peak hours and your best day to bounce back."}`
+          : "Your business is showing <strong>regular transaction activity</strong>. Keep accepting payments through TNG to build a stronger history for future financing readiness.",
+      },
+    };
+
+    return Response.json(fallback);
   }
 }
